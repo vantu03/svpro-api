@@ -1,0 +1,63 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+.env.*
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# SQLite DB
+*.sqlite3
+
+# Logs
+*.log
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Firebase private key (nếu dùng)
+*.json
+!firebase_config_example.json
+
+# Static uploads / user content
+static/uploads/
+media/
+tmp/
+temp/
+
+# Node (nếu bạn dùng thêm JS/TS frontend)
+node_modules/
+dist/
+build/
+
+# Python egg
+*.egg
+*.egg-info/
+
+# Others (tuỳ dự án)
+*.bak
+*.swp
