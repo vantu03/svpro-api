@@ -15,11 +15,11 @@ class Upload(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    url = Column(String, nullable=False)
-    file_path = Column(String, nullable=False)
-    file_name = Column(String, nullable=False)
+    url = Column(String(2000), nullable=False)
+    file_path = Column(String(2000), nullable=False)
+    file_name = Column(String(255), nullable=False)
     file_type = Column(Enum(FileType), default=FileType.other)
-    mime_type = Column(String, nullable=True)
+    mime_type = Column(String(50), nullable=True)
     size = Column(Integer, nullable=True)
     uploaded_at = Column(DateTime, default=func.now())
 

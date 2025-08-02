@@ -13,19 +13,11 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(Integer, primary_key=True, index=True)
-
-    # Người nhận
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     target = Column(Enum(NotificationTarget), default=NotificationTarget.user)
-
-    # Nội dung thông báo
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
-
-    # Trạng thái
     is_read = Column(Boolean, default=False)
-
-    # Thời gian
     created_at = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="notifications")
