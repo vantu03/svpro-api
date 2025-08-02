@@ -22,9 +22,9 @@ class ShipperApplication(Base):
     phone_number = Column(String(20), nullable=False)
     identity_number = Column(String(20), nullable=False)
 
-    identity_image_front = Column(String(2000), nullable=True)
-    identity_image_back = Column(String(2000), nullable=True)
-    portrait_image = Column(String(2000) ,nullable=True)
+    identity_image_front = Column(String(1000), nullable=True)
+    identity_image_back = Column(String(1000), nullable=True)
+    portrait_image = Column(String(1000) ,nullable=True)
 
     address = Column(String(255), nullable=False)
     date_of_birth = Column(Date, nullable=True)
