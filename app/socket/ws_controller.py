@@ -1,4 +1,5 @@
 from app.dependencies import verify_token
+from app.services.notification_service import notify_user
 from app.socket.ws_store import add_session, get_ws_by_user, connected_sessions
 
 
@@ -42,8 +43,17 @@ class WebsocketController:
                     for ws in wss:
                         await ws.send('logout', {})
                         ws.close()
+
             elif cmd == "ping":
                 await self.session.send('pong', {})
+
+            elif cmd == "add_test_notification":
+                await notify_user(
+                    self.session.db,
+                    user_id=self.session.user_id,
+                    title="📢 Thông báo test",
+                    content=f"Đây là thông báo thử nghiệm"
+                )
 
     async def cleanup(self):
         pass
