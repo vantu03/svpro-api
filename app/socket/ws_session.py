@@ -39,7 +39,15 @@ class WebSocketSession:
         self.db.close()
 
     async def send(self, cmd: str, payload: dict):
-        await self.websocket.send_json({
-            "cmd": cmd,
-            "payload": payload
-        })
+        try:
+            await self.websocket.send_json({
+                "cmd": cmd,
+                "payload": payload
+            })
+        except RuntimeError as e:
+            if "close message has been sent" in str(e):
+                print(f"[!] Gửi thất bại, WebSocket đã đóng (user_id={self.user_id})")
+            else:
+                raise
+        except Exception as e:
+            print(f"[!] Gửi thất bại do lỗi khác: {e}")

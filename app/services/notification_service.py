@@ -46,4 +46,5 @@ async def notify_user(
     sessions = get_ws_by_user(user_id)
     if sessions:
         for session in sessions:
-            await session.send("notification", to_dict(notification))
+            if session.is_connected:
+                await session.send("notification", to_dict(notification))
