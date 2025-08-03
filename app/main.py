@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
-from app.services.firebase_service import init_firebase
+from app.services.firebase_service import initialize_firebase
 from app.routers import auth, user, common, shipper, upload, notification, websocket
 from fastapi.staticfiles import StaticFiles
 
@@ -10,7 +10,7 @@ app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-init_firebase()
+initialize_firebase()
 
 app.add_middleware(
     CORSMiddleware,

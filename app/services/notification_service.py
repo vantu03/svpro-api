@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.notification import Notification, NotificationTarget
 from app.models.user_session import UserSession
-from app.services.firebase_service import send_fcm_large_list
+from app.services.firebase_service import send_fcm_multicast_each
 from app.socket.ws_store import get_ws_by_user
 from app.utils import to_dict
 from sqlalchemy.orm import joinedload
@@ -41,7 +41,7 @@ async def notify_user(
     print(f"[FCM] Sending {len(tokens)} tokens: {title} - {content}")
 
     if tokens:
-        await send_fcm_large_list(tokens, title, content)
+        await send_fcm_multicast_each(tokens, title, content)
 
     # 3. Gửi WebSocket nếu đang online
     sessions = get_ws_by_user(user_id)
@@ -49,7 +49,7 @@ async def notify_user(
 
     if sessions:
         for session in sessions:
-            print(f"[WS] Gửi tới user_id={session.user_id}, is_connected={session.is_connected}")
+            print(f"[WS] Gửi tới user_id={session.user_id}, session_id={session.session_id}, is_connected={session.is_connected}")
             if session.is_connected:
 
                 await session.send("notification", to_dict(notification))

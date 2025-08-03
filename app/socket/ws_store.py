@@ -11,7 +11,6 @@ def add_session(session):
     connected_users[session.user_id].add(session)
     connected_sessions[session.session_id] = session
 
-
 def remove_session(session):
     if session.session_id is None or session.user_id is None:
         return

@@ -1,49 +1,51 @@
-import asyncio
 import firebase_admin
-from firebase_admin import credentials, get_app
+from firebase_admin import credentials, messaging
+import asyncio
+from typing import List
+
 from app.config import get_settings
-from firebase_admin.messaging import send_each_for_multicast, MulticastMessage, Notification
 
 settings = get_settings()
 
-
-def init_firebase():
+def initialize_firebase():
     try:
-        get_app()
+        firebase_admin.get_app()
     except ValueError:
-        print("✅ Initializing Firebase...")
         cred = credentials.Certificate(settings.google_credentials)
         firebase_admin.initialize_app(cred)
         print("✅ Firebase initialized!")
 
-
-
-async def send_fcm_to_many(tokens: list[str], title: str, body: str):
+async def send_fcm_multicast_each(
+    tokens: List[str],
+    title: str,
+    body: str,
+    data: dict = None
+):
     if not tokens:
-        print("⚠️ No tokens provided.")
-        return
+        return {"success_count": 0, "failure_count": 0, "failed_tokens": []}
 
-    message = MulticastMessage(
-        notification=Notification(title=title, body=body),
+    message = messaging.MulticastMessage(
+        notification=messaging.Notification(title=title, body=body),
+        data=data or {},
         tokens=tokens,
     )
 
+    def _send_each():
+        return messaging.send_each_for_multicast(message)
+
     try:
-        response = await asyncio.to_thread(send_each_for_multicast, message)
-        success_count = sum(1 for r in response if r.success)
-        print(f"📤 Sent {success_count} / {len(tokens)} messages")
-
-        for idx, resp in enumerate(response):
+        response = await asyncio.to_thread(_send_each)
+        print(f"📤 Gửi thành công {response.success_count}/{len(tokens)} tokens")
+        failed = [tokens[i] for i, resp in enumerate(response.responses) if not resp.success]
+        for i, resp in enumerate(response.responses):
             if not resp.success:
-                print(f"❌ Failed token: {tokens[idx]}, reason: {resp.exception}")
+                print(f"❌ Token lỗi[{i}]: {tokens[i]}, lỗi: {resp.exception}")
+        return {
+            "success_count": response.success_count,
+            "failure_count": response.failure_count,
+            "failed_tokens": failed,
+        }
+
     except Exception as e:
-        print(f"❌ FCM sending failed: {e}")
-
-def chunked(lst: list, size: int):
-    for i in range(0, len(lst), size):
-        yield lst[i:i + size]
-
-
-async def send_fcm_large_list(tokens: list[str], title: str, body: str):
-    for chunk in chunked(tokens, 500):
-        await send_fcm_to_many(chunk, title, body)
+        print(f"❌ Lỗi khi gửi FCM: {e}")
+        return {"success_count": 0, "failure_count": len(tokens), "error": str(e)}
