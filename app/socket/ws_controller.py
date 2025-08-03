@@ -42,6 +42,8 @@ class WebsocketController:
                     for ws in wss:
                         await ws.send('logout', {})
                         ws.close()
+            elif cmd == "ping":
+                await self.session.send('pong', {})
 
     async def cleanup(self):
         pass
