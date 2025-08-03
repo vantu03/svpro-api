@@ -38,13 +38,18 @@ async def notify_user(
         for s in active_sessions
         if s.fcm_token and s.fcm_token.token
     ]
+    print(f"[FCM] Sending {len(tokens)} tokens: {title} - {content}")
 
     if tokens:
         await send_fcm_large_list(tokens, title, content)
 
     # 3. Gửi WebSocket nếu đang online
     sessions = get_ws_by_user(user_id)
+    print(f"[notify_user] Sockets: {len(sessions)}")
+
     if sessions:
         for session in sessions:
+            print(f"[WS] Gửi tới user_id={session.user_id}, is_connected={session.is_connected}")
             if session.is_connected:
+
                 await session.send("notification", to_dict(notification))
