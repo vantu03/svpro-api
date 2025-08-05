@@ -30,6 +30,7 @@ class WebsocketController:
                     self.session.session_id = user_session.id
                     self.session.is_auth = True
                     add_session(self.session)
+                    await self.session.send('auth_done', {})
 
                     print(f"[WS] size: {len(connected_sessions)}")
                 except Exception as e:
