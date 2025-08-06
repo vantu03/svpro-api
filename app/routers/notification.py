@@ -1,9 +1,7 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, require_session
-from app.models.notification import Notification, NotificationTarget
+from app.models.notification import Notification
 from app.models.user_session import UserSession
 from app.utils import response_json, build_response, to_dict
 

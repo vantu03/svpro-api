@@ -21,7 +21,7 @@ def get_shipper_info(
     # Lấy thông tin Shipper (nếu đã được duyệt)
     shipper = (
         db.query(Shipper)
-        .filter(Shipper.user_id == user_id)
+        .filter(Shipper.user_id == user_id, Shipper.is_active == True)
         .order_by(Shipper.create_at.desc())
         .first()
     )
@@ -50,6 +50,20 @@ async def register_shipper(
     db: Session = Depends(get_db),
     session = Depends(require_session)
 ):
+
+    # ✅ 1. Kiểm tra đã là Shipper hay chưa
+    existing_shipper = db.query(Shipper).filter(
+        Shipper.user_id == session.user.id,
+        Shipper.is_active == True
+    ).first()
+
+    if existing_shipper:
+        raise HTTPException(
+            status_code=400,
+            detail=response_json(False, "Bạn đã là Shipper.")
+        )
+
+    # ✅ 2. Kiểm tra đơn chờ duyệt
     existing_application = db.query(ShipperApplication).filter(
         ShipperApplication.user_id == session.user.id,
         ShipperApplication.status == ApplicationStatus.pending
@@ -83,8 +97,8 @@ async def register_shipper(
     db.commit()
     db.refresh(application)
 
-    await notify_user(db, session.user.id, "Đã gửi đơn đăng ký làm shipper", "Hãy chờ được duyệt nhé")
+    await notify_user(db, session.user.id, "Đã gửi hồ sơ Shipper", "Bạn đã gửi hồ sơ đăng ký làm Shipper, hãy chờ để chúng tôi xét duyệt hồ sơ của bạn có đạt yêu cầu không nhé.")
 
     return build_response(
-        detail=response_json(status=True,message= "Đăng ký thành công, vui lòng chờ xét duyệt")
+        detail=response_json(status=True,message= "Gửi hồ sơ thành công")
     )

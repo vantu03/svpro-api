@@ -37,7 +37,10 @@ class ShipperApplication(Base):
     status = Column(Enum(ApplicationStatus), default=ApplicationStatus.pending)
     reject_reason = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="shipper_applications")
+
+    def __repr__(self):
+        return f"<ShipperApplication(id={self.id}, user_id={self.user_id}, status={self.status})>"

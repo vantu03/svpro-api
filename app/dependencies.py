@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from app.database import SessionLocal
 from typing import Generator, Any
 from fastapi import Depends, HTTPException
@@ -15,6 +17,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 settings = get_settings()
 
 def get_db() -> Generator[Session, None, None]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@contextmanager
+def get_db_context():
     db = SessionLocal()
     try:
         yield db

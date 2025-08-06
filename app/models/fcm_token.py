@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func, Bool
 from sqlalchemy.orm import relationship
 from app.database import Base
 
-class FcmToken(Base):
+class FCMToken(Base):
 
     __tablename__ = "fcm_tokens"
 

@@ -5,10 +5,9 @@ from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 from app.dependencies import get_db, require_session
-from app.models.notification import Notification, NotificationTarget
 from app.models.user import User
 from app.models.user_session import UserSession
-from app.models.fcm_token import FcmToken
+from app.models.fcm_token import FCMToken
 from app.schemas.user import LoginRequest, RegisterRequest
 from app.services.notification_service import notify_user
 from app.utils import response_json, md5_hash, verify_password, build_response
@@ -48,7 +47,7 @@ async def login(
                 detail=response_json(status=False, message='Tài khoản hoặc mật khẩu không đúng')
             )
 
-    await notify_user(db, user.id, "Tài khoản đã được đăng nhập gần đây", f"Liệu có phải bạn không {datetime.now().strftime('%H:%M:%S')}")
+    await notify_user(db, user.id, "Tài khoản đã được đăng nhập gần đây", f"Đăng nhập vào ${data.device_info} lúc {datetime.now().strftime('%H:%M:%S')}\nCó phải bạn không?")
 
     # Tạo phiên đăng nhập mới
     session = UserSession(user_id=user.id, device_info=data.device_info)
@@ -58,9 +57,9 @@ async def login(
 
     # Lưu FCM nếu có
     if data.fcm_token:
-        db.query(FcmToken).filter(FcmToken.token == data.fcm_token).delete()
+        db.query(FCMToken).filter(FCMToken.token == data.fcm_token).delete()
 
-        fcm_token = FcmToken(
+        fcm_token = FCMToken(
             token=data.fcm_token,
             device_info=data.device_info,
             session_id=session.id
@@ -87,7 +86,7 @@ def logout(
     db: Session = Depends(get_db)
 ):
     session.is_active = False
-    db.query(FcmToken).filter(FcmToken.session_id == session.id).delete()
+    db.query(FCMToken).filter(FCMToken.session_id == session.id).delete()
 
     db.commit()
 

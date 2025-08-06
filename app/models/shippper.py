@@ -9,7 +9,7 @@ class Shipper(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     application_id = Column(Integer, ForeignKey("shipper_applications.id"))
-    create_at = Column(DateTime, default=func.now)
+    create_at = Column(DateTime, server_default=func.now())
     is_active = Column(Boolean, default=True)
 
     user = relationship("User")

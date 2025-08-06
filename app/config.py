@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     DATABASE_URL: str
     FIREBASE_CREDENTIALS: str
+    BASE_URL: str = "http://localhost:8000"
 
     @property
     def google_credentials(self) -> dict:

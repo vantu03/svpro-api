@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-
+from app.admin import  setup_admin
 from app.database import Base, engine
 from app.services.firebase_service import initialize_firebase
 from app.routers import auth, user, common, shipper, upload, notification, websocket
@@ -30,6 +30,7 @@ app.include_router(upload.router, prefix="/upload", tags=["upload"])
 app.include_router(notification.router, prefix="/notification", tags=["notification"])
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 
+setup_admin(app, engine)
 @app.get("/")
 def read_root():
     return {"message": "Server is running"}
