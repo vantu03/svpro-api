@@ -47,7 +47,7 @@ async def login(
                 detail=response_json(status=False, message='Tài khoản hoặc mật khẩu không đúng')
             )
 
-    await notify_user(db, user.id, "Tài khoản đã được đăng nhập gần đây", f"Đăng nhập vào ${data.device_info} lúc {datetime.now().strftime('%H:%M:%S')}\nCó phải bạn không?")
+    await notify_user(db, user.id, "Tài khoản đã được đăng nhập gần đây", f"Đăng nhập vào {data.device_info} vào lúc {datetime.now().strftime('%H:%M:%S')}\nCó phải bạn không?")
 
     # Tạo phiên đăng nhập mới
     session = UserSession(user_id=user.id, device_info=data.device_info)
