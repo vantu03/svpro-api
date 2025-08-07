@@ -59,7 +59,7 @@ class Ictu:
         soup = BeautifulSoup(res.text, 'html.parser')
         form_data = extract_form_fields(soup.find('form'))
         # Lấy ngày hiện tại trừ đi 4 năm
-        tu_ngay = datetime.today() - timedelta(days=365 * 1)
+        tu_ngay = datetime.today() - timedelta(days=365 * 4)
         form_data['txtTuNgay'] = tu_ngay.strftime('%d/%m/%Y')
         res = await self.session.post(url=res.url, data=form_data)
 
@@ -130,7 +130,7 @@ class Ictu:
         soup = BeautifulSoup(res.text, 'html.parser')
         form_data = extract_form_fields(soup.find('form'))
         # Lấy ngày hiện tại trừ đi 4 năm
-        tu_ngay = datetime.today() - timedelta(days=365 * 1)
+        tu_ngay = datetime.today() - timedelta(days=365 * 4)
         form_data['txtTuNgay'] = tu_ngay.strftime('%d/%m/%Y')
         res = await self.session.post(url=res.url, data=form_data)
 
