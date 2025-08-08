@@ -73,7 +73,7 @@ def find_text_positions(df: pd.DataFrame, search_text: str, case_sensitive=False
         for col_idx, cell in enumerate(row):
             if pd.notna(cell):
                 cell_str = str(cell)
-                if (search_text in cell_str) if case_sensitive else (search_text.lower() in cell_str.lower()):
+                if (cell_str == search_text) if case_sensitive else (cell_str.lower() == search_text.lower()):
                     matches.append({"row": row_idx, "col": col_idx, "value": cell})
     return matches
 

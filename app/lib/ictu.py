@@ -100,7 +100,7 @@ class Ictu:
                     'scheduleType': 'Lịch học',
                     'timeRange': '00:00',
                     'detail': {
-                        'Tiết': [],
+                        'Tiết': '',
                         'Địa điểm': str(df.iloc[i, col_room]).strip(),
                         'Buổi': session_counter[cell],
                     },
@@ -116,7 +116,7 @@ class Ictu:
                     parts = [int(p.strip()) for p in period_raw.split('-->')]
                     if len(parts) == 2:
                         tiet_start, tiet_end = parts
-                        lichhoc['detail']['Tiết'] = list(range(tiet_start, tiet_end + 1))
+                        lichhoc['detail']['Tiết'] = ", ".join(str(i) for i in range(tiet_start, tiet_end + 1))
                         lichhoc['timeRange'] = get_study_time(tiet_start, tiet_end)
                     elif len(parts) == 1:
                         tiet_start = tiet_end = parts[0]
