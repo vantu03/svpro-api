@@ -45,6 +45,7 @@ def verify_token(token: str, db: Session):
             else:
                 ws_session = connected_sessions.get(session_id)
                 if ws_session:
+                    ws_session.send('logout', {})
                     ws_session.send('auth_failed', {})
                 raise HTTPException(
                     status_code=401,

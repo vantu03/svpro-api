@@ -3,6 +3,18 @@ import hashlib
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
 
+
+MD5_PATTERN = re.compile(r'^[a-fA-F0-9]{32}$')
+
+def is_md5(s: str) -> bool:
+    return bool(MD5_PATTERN.fullmatch(s))
+
+def md5_hash_once(text: str) -> str:
+    # Nếu đã là MD5 thì trả nguyên
+    if is_md5(text):
+        return text.lower()
+    return md5_hash(text)
+
 def md5_hash(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()
 
@@ -94,3 +106,9 @@ def convert_time_to_minutes(time_range):
     match = re.match(r'(\d{2}):(\d{2})', time_range)
     return int(match.group(1)) * 60 + int(match.group(2)) if match else -1
 
+
+
+def clean_full_name(value):
+    value = str(value).strip()
+    value = re.sub(r'\s*\([^)]*\)\s*$', '', value)
+    return value

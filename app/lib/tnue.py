@@ -7,7 +7,7 @@ from app.utils import extract_form_fields, convert_time_to_minutes, find_text_po
     clean_full_name, md5_hash_once
 
 
-class Ictu:
+class Tnue:
     def __init__(self):
         self.session = httpx.AsyncClient(
             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
@@ -23,7 +23,7 @@ class Ictu:
 
     async def login(self, tk, mk):
         try:
-            res = await self.session.get('http://dangkytinchi.ictu.edu.vn/kcntt/login.aspx')
+            res = await self.session.get('http://daotao.dhsptn.edu.vn/dhsp/login.aspx')
             soup = BeautifulSoup(res.text, 'html.parser')
             form_data = extract_form_fields(soup.find('form'))
 
@@ -45,7 +45,7 @@ class Ictu:
             return {'error': str(e)}
 
     async def get_schedule(self):
-        await self.get_lich_hoc()
+        #await self.get_lich_hoc()
         await self.get_lich_thi()
 
         self.result['schedule'].sort(key=lambda x: (
@@ -61,7 +61,7 @@ class Ictu:
         return self.result
 
     async def get_lich_hoc(self):
-        res = await self.session.get('http://dangkytinchi.ictu.edu.vn/kcntt/Reports/Form/StudentTimeTable.aspx')
+        res = await self.session.get('https://dangkytinchi.ictu.edu.vn/kcntt/Reports/Form/StudentTimeTable.aspx')
         soup = BeautifulSoup(res.text, 'html.parser')
         form_data = extract_form_fields(soup.find('form'))
         # Lấy ngày hiện tại trừ đi 4 năm
@@ -132,7 +132,7 @@ class Ictu:
                     pass
 
     async def get_lich_thi(self):
-        res = await self.session.get('http://dangkytinchi.ictu.edu.vn/kcntt/StudentViewExamList.aspx')
+        res = await self.session.get('http://daotao.dhsptn.edu.vn/dhsp/StudentViewExamList.aspx')
         soup = BeautifulSoup(res.text, 'html.parser')
         form_data = extract_form_fields(soup.find('form'))
         # Lấy ngày hiện tại trừ đi 4 năm
@@ -144,13 +144,13 @@ class Ictu:
             return
 
         df = pd.read_excel(BytesIO(res.content), engine='xlrd')
-        class_pos = find_text_positions(df, 'Tên học phần')
+        class_pos = find_text_positions(df, 'Tên Học phần')
         col_class = class_pos[0]['col']
         row_start = class_pos[0]['row'] + 1
 
-        col_tc = find_text_positions(df, 'TC')[0]['col']
+        col_tc = find_text_positions(df, 'Số TC')[0]['col']
         col_day = find_text_positions(df, 'Ngày thi')[0]['col']
-        col_period = find_text_positions(df, 'Thời gian thi')[0]['col']
+        col_period = find_text_positions(df, 'Ca thi')[0]['col']
         col_form = find_text_positions(df, 'Hình thức thi')[0]['col']
         col_sbd = find_text_positions(df, 'SBD')[0]['col']
         col_room = find_text_positions(df, 'Phòng thi')[0]['col']

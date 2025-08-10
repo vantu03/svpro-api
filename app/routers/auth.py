@@ -10,9 +10,15 @@ from app.models.user_session import UserSession
 from app.models.fcm_token import FCMToken
 from app.schemas.user import LoginRequest, RegisterRequest
 from app.services.notification_service import notify_user
-from app.utils import response_json, md5_hash, verify_password, build_response
+from app.utils import response_json, verify_password, build_response
 from app.config import get_settings
 from app.lib.ictu import Ictu
+from app.lib.tnue import Tnue
+
+PROVIDERS = {
+    'DTC': Ictu,  # ICTU
+    'DTS': Tnue,  # TNUE
+}
 
 router = APIRouter()
 settings = get_settings()
@@ -22,25 +28,40 @@ async def login(
     data: LoginRequest,
     db: Session = Depends(get_db)
 ):
-    username = data.username.lower()
-    pwd_md5 = md5_hash(data.password)
+    username = data.username.upper().strip()
     user = db.query(User).filter(User.username == username).first()
 
-    # Nếu là tài khoản sinh viên và chưa có user trong hệ thống → đăng nhập từ ICTU
-    if username.startswith('dtc') and not user:
-        browser = Ictu()
-        result = await browser.login(username, pwd_md5)
-        if result:
+    # Xác định provider theo prefix
+    provider_key = next((p for p in PROVIDERS if username.startswith(p)), None)
+
+    if provider_key and (not user or not verify_password(data.password, user.password)):
+        provider = PROVIDERS[provider_key]()
+        result = await provider.login(username, data.password)
+
+        if result.get('error'):
             raise HTTPException(
                 status_code=404,
-                detail=response_json(status=False, message=result)
+                detail=response_json(status=False, message=result.get('error'))
             )
-        user = User(username=username, password=pwd_md5)
-        db.add(user)
+
+        # Upsert user + lưu MD5 (giữ nguyên convention hiện tại)
+        if not user:
+            user = User(
+                username=username,
+                full_name=result.get('full_name'),
+                password=result.get('password')
+            )
+            db.add(user)
+        else:
+            user.password = result.get('password')
+            if not user.full_name and result.get('full_name'):
+                user.full_name = result['full_name']
+
         db.commit()
         db.refresh(user)
 
     else:
+        # Tài khoản không phải mã sinh viên (hoặc đã có user và verify pass OK) → kiểm tra local
         if not user or not verify_password(data.password, user.password):
             raise HTTPException(
                 status_code=404,

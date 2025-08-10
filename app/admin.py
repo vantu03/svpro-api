@@ -71,7 +71,7 @@ class AdminAuth(AuthenticationBackend):
             return False
 
 class UserAdmin(ModelView, model=User):
-    column_list = [User.id, User.username, User.email]
+    column_list = [User.id, User.username, User.full_name, User.email]
 
 class UserSessionAdmin(ModelView, model=UserSession):
     column_list = [UserSession.id, UserSession.user_id, UserSession.fcm_token, UserSession.created_at]

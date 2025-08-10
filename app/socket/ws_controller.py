@@ -35,6 +35,7 @@ class WebsocketController:
                     print(f"[WS] size: {len(connected_sessions)}")
                 except Exception as e:
                     print('Loi xac thuc '+ str(e))
+                    await self.session.send('logout', {})
                     await self.session.send('auth_failed', {})
                     await self.session.close()
         else:
