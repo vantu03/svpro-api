@@ -10,9 +10,7 @@ class WebsocketController:
     async def process_message(self, msg):
         cmd = msg.get("cmd")
 
-        print(cmd)
         payload = msg.get("payload")
-        print(payload)
         if not self.session.is_auth:
             if cmd == "auth":
                 token = payload.get("token", "")
@@ -54,7 +52,8 @@ class WebsocketController:
                     self.session.db,
                     user_id=self.session.user_id,
                     title="📢 Thông báo test",
-                    content=f"Đây là thông báo thử nghiệm"
+                    content=f"Đây là thông báo thử nghiệm",
+
                 )
 
     async def cleanup(self):
