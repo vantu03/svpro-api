@@ -4,7 +4,7 @@ from app.models.notification import Notification, NotificationTarget
 from app.models.user_session import UserSession
 from app.services.firebase_service import send_fcm_multicast_each
 from app.socket.ws_store import get_ws_by_user
-from app.utils import to_dict
+from app.utils import to_dict, build_navigate_payload
 from sqlalchemy.orm import joinedload
 
 async def notify_user(
@@ -40,8 +40,13 @@ async def notify_user(
     ]
     print(f"[FCM] Sending {len(tokens)} tokens: {title} - {content}")
 
-    if tokens:
-        await send_fcm_multicast_each(tokens, title, content)
+    payload_str = build_navigate_payload("/home", {"tab": "notifications"})
+    await send_fcm_multicast_each(
+        tokens,
+        title,
+        content,
+        data={"payload": payload_str}
+    )
 
     # 3. Gửi WebSocket nếu đang online
     sessions = get_ws_by_user(user_id)

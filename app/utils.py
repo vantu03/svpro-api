@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd, re
 import hashlib
 from passlib.context import CryptContext
@@ -112,3 +114,12 @@ def clean_full_name(value):
     value = str(value).strip()
     value = re.sub(r'\s*\([^)]*\)\s*$', '', value)
     return value
+
+
+def build_navigate_payload(route: str, params: dict | None = None) -> str:
+    data = {
+        "action": "navigate",
+        "route": route,
+        "params": params or {}
+    }
+    return json.dumps(data, ensure_ascii=False)

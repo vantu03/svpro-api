@@ -13,3 +13,8 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=6)
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
+
+
+class FcmTokenRequest(BaseModel):
+    fcm_token: str
+    platform: Optional[str] = None
