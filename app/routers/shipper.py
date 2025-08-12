@@ -7,7 +7,7 @@ from app.models.shippper import Shipper
 from app.models.user_session import UserSession
 from app.schemas.shipper import ShipperRegisterRequest
 from app.services.notification_service import notify_user
-from app.utils import response_json, build_response, to_dict
+from app.utils import response_json, build_response, to_dict, normalize_phone, normalize_name
 
 router = APIRouter()
 
@@ -16,12 +16,11 @@ def get_shipper_info(
     db: Session = Depends(get_db),
     session: UserSession = Depends(require_session)
 ):
-    user_id = session.user.id
 
     # Lấy thông tin Shipper (nếu đã được duyệt)
     shipper = (
         db.query(Shipper)
-        .filter(Shipper.user_id == user_id, Shipper.is_active == True)
+        .filter(Shipper.user_id == session.user_id, Shipper.is_active == True)
         .order_by(Shipper.create_at.desc())
         .first()
     )
@@ -29,7 +28,7 @@ def get_shipper_info(
     # Lấy thông tin đơn đăng ký gần nhất (nếu có)
     application = (
         db.query(ShipperApplication)
-        .filter(ShipperApplication.user_id == user_id)
+        .filter(ShipperApplication.user_id == session.user_id)
         .order_by(ShipperApplication.created_at.desc())
         .first()
     )
@@ -78,8 +77,8 @@ async def register_shipper(
     # Tạo đơn mới
     application = ShipperApplication(
         user_id=session.user.id,
-        full_name=payload.full_name,
-        phone_number=payload.phone_number,
+        full_name=normalize_name(payload.full_name),
+        phone_number=normalize_phone(payload.phone_number),
         identity_number=payload.identity_number,
         identity_image_front=payload.identity_image_front,
         identity_image_back=payload.identity_image_back,

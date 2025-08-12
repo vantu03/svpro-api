@@ -9,6 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
 from app.dependencies import verify_token, get_db_context
+from app.models.sender import Sender
 from app.models.user import User
 from app.models.user_session import UserSession
 from app.models.shippper import Shipper
@@ -133,6 +134,9 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
                     'sound_warning.wav'
                 )
 
+class SenderAdmin(ModelView, model=Sender):
+    column_list = [Sender.id, Sender.user_id, Sender.status, Sender.create_at]
+
 class NotificationAdmin(ModelView, model=Notification):
     column_list = [Notification.id, Notification.user_id, Notification.title, Notification.content, Notification.is_read]
 
@@ -171,6 +175,7 @@ def setup_admin(app, engine):
     admin.add_view(UserAdmin)
     admin.add_view(UserSessionAdmin)
     admin.add_view(ShipperAdmin)
+    admin.add_view(SenderAdmin)
     admin.add_view(ShipperApplicationAdmin)
     admin.add_view(NotificationAdmin)
     admin.add_view(BannerAdmin)
