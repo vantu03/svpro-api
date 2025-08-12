@@ -114,7 +114,8 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
                         db,
                         model.user_id,
                         "Hồ sơ đăng ký Shipper đã được duyệt",
-                        "Sau khi xem xét hồ sơ của bạn chúng tôi nhận thấy bạn đủ điều kiện làm shipper.\nHãy vào tiện ích shipper để bật thông báo khi có đơn nhé."
+                        "Sau khi xem xét hồ sơ của bạn chúng tôi nhận thấy bạn đủ điều kiện làm shipper.\nHãy vào tiện ích shipper để bật thông báo khi có đơn nhé.",
+                        'sound_warning.wav'
                     )
 
             if model.status == 'rejected':
@@ -128,7 +129,8 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
                     db,
                     model.user_id,
                     "Cập nhật nội dung hồ sơ Shipper",
-                    message
+                    message,
+                    'sound_warning.wav'
                 )
 
 class NotificationAdmin(ModelView, model=Notification):

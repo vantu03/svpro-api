@@ -97,7 +97,13 @@ async def register_shipper(
     db.commit()
     db.refresh(application)
 
-    await notify_user(db, session.user.id, "Đã gửi hồ sơ Shipper", "Bạn đã gửi hồ sơ đăng ký làm Shipper, hãy chờ để chúng tôi xét duyệt hồ sơ của bạn có đạt yêu cầu không nhé.")
+    await notify_user(
+        db,
+        session.user.id,
+     "Đã gửi hồ sơ Shipper",
+      "Bạn đã gửi hồ sơ đăng ký làm Shipper, hãy chờ để chúng tôi xét duyệt hồ sơ của bạn có đạt yêu cầu không nhé.",
+        'sound_warning.wav'
+    )
 
     return build_response(
         detail=response_json(status=True,message= "Gửi hồ sơ thành công")

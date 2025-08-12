@@ -53,7 +53,7 @@ class WebsocketController:
                     user_id=self.session.user_id,
                     title="📢 Thông báo test",
                     content=f"Đây là thông báo thử nghiệm",
-
+                    sound='sound_warning.wav'
                 )
 
     async def cleanup(self):

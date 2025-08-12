@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.notification import Notification, NotificationTarget
 from app.models.user_session import UserSession
-from app.services.firebase_service import send_fcm_multicast_each
+from app.services.firebase_service import send_notification
 from app.socket.ws_store import get_ws_by_user
 from app.utils import to_dict, build_navigate_payload
 from sqlalchemy.orm import joinedload
@@ -12,6 +12,7 @@ async def notify_user(
     user_id: int,
     title: str,
     content: str,
+    sound: str = None,
     target: NotificationTarget = NotificationTarget.user,
 ):
     # 1. Lưu DB
@@ -41,11 +42,12 @@ async def notify_user(
     print(f"[FCM] Sending {len(tokens)} tokens: {title} - {content}")
 
     payload_str = build_navigate_payload("/home", {"tab": "notifications"})
-    await send_fcm_multicast_each(
+    await send_notification(
         tokens,
         title,
         content,
-        data={"payload": payload_str}
+        data={"payload": payload_str},
+        sound=sound
     )
 
     # 3. Gửi WebSocket nếu đang online
