@@ -22,7 +22,8 @@ class Sender(Base):
     create_at = Column(DateTime, server_default=func.now())
     update_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    user = relationship("User")
+    user = relationship("User", back_populates="sender")
+    orders = relationship("Order", back_populates="sender", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Sender(id={self.id}, name={self.name}, phone={self.phone}, status={self.status})>"
+        return f"<Sender(id={self.id}, name={self.full_name}, phone={self.phone_number}, status={self.status})>"

@@ -22,7 +22,7 @@ class User(Base):
     uploads = relationship("Upload", back_populates="user", cascade="all, delete-orphan")
     shipper_applications = relationship("ShipperApplication", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
-    sender = relationship("Sender", back_populates="user", uselist=False,  cascade="all, delete-orphan")
+    sender = relationship("Sender", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
     def __repr__(self):

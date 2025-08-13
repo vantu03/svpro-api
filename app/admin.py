@@ -9,6 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
 from app.dependencies import verify_token, get_db_context
+from app.models.order import Order
 from app.models.sender import Sender
 from app.models.user import User
 from app.models.user_session import UserSession
@@ -106,6 +107,9 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
                     new_shipper = Shipper(
                         user_id=model.user_id,
                         application_id=model.id,
+                        full_name=model.full_name,
+                        phone_number=model.phone_number,
+                        avatar_url=model.portrait_image,
                         is_active=True
                     )
                     db.add(new_shipper)
@@ -114,7 +118,7 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
                     await notify_user(
                         db,
                         model.user_id,
-                        "Hồ sơ đăng ký Shipper đã được duyệt",
+                        "Chào mừng bạn tham gia shipper",
                         "Sau khi xem xét hồ sơ của bạn chúng tôi nhận thấy bạn đủ điều kiện làm shipper.\nHãy vào tiện ích shipper để bật thông báo khi có đơn nhé.",
                         'sound_warning.wav'
                     )
@@ -136,6 +140,9 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
 
 class SenderAdmin(ModelView, model=Sender):
     column_list = [Sender.id, Sender.user_id, Sender.status, Sender.create_at]
+
+class OrderAdmin(ModelView, model=Order):
+    column_list = [Order.id, Order.sender_id, Order.receiver_name, Order.status, Order.create_at]
 
 class NotificationAdmin(ModelView, model=Notification):
     column_list = [Notification.id, Notification.user_id, Notification.title, Notification.content, Notification.is_read]
@@ -176,6 +183,7 @@ def setup_admin(app, engine):
     admin.add_view(UserSessionAdmin)
     admin.add_view(ShipperAdmin)
     admin.add_view(SenderAdmin)
+    admin.add_view(OrderAdmin)
     admin.add_view(ShipperApplicationAdmin)
     admin.add_view(NotificationAdmin)
     admin.add_view(BannerAdmin)
