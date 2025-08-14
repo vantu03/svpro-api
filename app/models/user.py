@@ -21,6 +21,7 @@ class User(Base):
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     uploads = relationship("Upload", back_populates="user", cascade="all, delete-orphan")
     shipper_applications = relationship("ShipperApplication", back_populates="user", cascade="all, delete-orphan")
+    shipper = relationship("Shipper", back_populates="user", uselist=False, cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     sender = relationship("Sender", back_populates="user", uselist=False, cascade="all, delete-orphan")
 

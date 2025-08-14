@@ -3,7 +3,7 @@ from starlette.middleware.cors import CORSMiddleware
 from app.admin import  setup_admin
 from app.database import Base, engine
 from app.services.firebase_service import initialize_firebase
-from app.routers import auth, user, common, shipper, upload, notification, websocket, sender, order
+from app.routers import auth, user, common, shipper, upload, notification, websocket, sender
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
@@ -26,7 +26,6 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(user.router, prefix="/user", tags=["user"])
 app.include_router(shipper.router, prefix="/shipper", tags=["shipper"])
 app.include_router(sender.router, prefix="/sender", tags=["sender"])
-app.include_router(order.router, prefix="/order", tags=["order"])
 app.include_router(common.router, prefix="/common", tags=["common"])
 app.include_router(upload.router, prefix="/upload", tags=["upload"])
 app.include_router(notification.router, prefix="/notification", tags=["notification"])

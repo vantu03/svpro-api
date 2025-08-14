@@ -15,8 +15,13 @@ class Shipper(Base):
     avatar_url = Column(String(1000), nullable=True)
 
     create_at = Column(DateTime, server_default=func.now())
+    update_at = Column(
+        DateTime,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
     is_active = Column(Boolean, default=True)
 
-    user = relationship("User")
+    user = relationship("User", back_populates="shipper", uselist=False)
     application = relationship("ShipperApplication")
     orders = relationship("Order", back_populates="shipper")

@@ -1,6 +1,4 @@
 import json
-from titlecase import titlecase
-import phonenumbers
 import pandas as pd, re
 import hashlib
 from passlib.context import CryptContext
@@ -125,18 +123,20 @@ def build_navigate_payload(route: str, params: dict | None = None) -> str:
     }
     return json.dumps(data, ensure_ascii=False)
 
-
 def normalize_name(name: str) -> str:
-    return titlecase(" ".join(name.strip().split()))
+    if not name or not isinstance(name, str):
+        return ""
+    name = " ".join(name.strip().split())
+    name = re.sub(r"[^0-9A-Za-zÀ-ỹà-ỹ\s]", "", name)
+    return " ".join(w.capitalize() for w in name.split())
 
-def normalize_phone(phone: str, region: str = "VN") -> str:
-    try:
-        parsed = phonenumbers.parse(phone, region)
-        if not phonenumbers.is_valid_number(parsed):
-            return None
-        nat_number = str(parsed.national_number)
-        if not nat_number.startswith("0"):
-            nat_number = "0" + nat_number
-        return nat_number
-    except phonenumbers.NumberParseException:
-        return None
+def normalize_phone(phone: str) -> str:
+    if not phone or not isinstance(phone, str):
+        return ""
+    digits = re.sub(r"\D", "", phone)
+    if digits.startswith("84") and len(digits) in (11, 12):
+        digits = "0" + digits[2:]
+    if len(digits) == 10 and digits.startswith("0"):
+        return digits
+
+    return ""

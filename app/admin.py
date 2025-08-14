@@ -13,7 +13,7 @@ from app.models.order import Order
 from app.models.sender import Sender
 from app.models.user import User
 from app.models.user_session import UserSession
-from app.models.shippper import Shipper
+from app.models.shipper import Shipper
 from app.models.shipper_application import ShipperApplication
 from app.models.notification import Notification
 from app.models.banner import Banner

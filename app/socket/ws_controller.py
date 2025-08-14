@@ -1,3 +1,5 @@
+from jose import ExpiredSignatureError
+
 from app.dependencies import verify_token
 from app.services.notification_service import notify_user
 from app.socket.ws_store import add_session, get_ws_by_user, connected_sessions
@@ -31,18 +33,21 @@ class WebsocketController:
                     await self.session.send('auth_done', {})
 
                     print(f"[WS] size: {len(connected_sessions)}")
-                except Exception as e:
+                except ExpiredSignatureError as e:
                     print('Loi xac thuc '+ str(e))
                     await self.session.send('logout', {})
-                    await self.session.send('auth_failed', {})
+                    await self.session.send('auth_failed', {"reason": "expired"})
                     await self.session.close()
         else:
             if cmd == "logout_all":
-                wss = get_ws_by_user(user_id=self.session.user_id)
-                if wss is not None:
-                    for ws in wss:
-                        await ws.send('logout', {})
-                        ws.close()
+                ws_users = get_ws_by_user(user_id=self.session.user_id)
+                if ws_users is not None:
+                    for ws_user in ws_users:
+                        try:
+                            await ws_user.send('logout', {})
+                            await ws_user.close()
+                        except Exception as e:
+                            print(f"[WS] Lỗi gửi socket: {e}")
 
             elif cmd == "ping":
                 await self.session.send('pong', {})
@@ -55,6 +60,12 @@ class WebsocketController:
                     content=f"Đây là thông báo thử nghiệm",
                     sound='sound_warning.wav'
                 )
+            elif cmd == "subscribe_order_pending":
+                self.session.subscribed_order_pending = True
+                await self.session.send("subscribed", {"topic": "order_pending"})
 
+            elif cmd == "unsubscribe_order_pending":
+                self.session.subscribed_order_pending = False
+                await self.session.send("unsubscribed", {"topic": "order_pending"})
     async def cleanup(self):
         pass

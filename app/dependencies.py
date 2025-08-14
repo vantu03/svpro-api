@@ -7,6 +7,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from app.config import get_settings
+from app.models.sender import SenderStatus, Sender
+from app.models.shipper import Shipper
 from app.models.user_session import UserSession
 from app.models.user import User
 from app.socket.ws_store import connected_sessions
@@ -63,3 +65,22 @@ def require_session(token: str = Depends(oauth2_scheme), db: Session = Depends(g
 
 def require_user(session: UserSession = Depends(require_session)) -> type[User]:
     return session.user
+
+
+def require_sender(user: User = Depends(require_user)) -> Sender:
+    sender = user.sender
+    if not sender or sender.status != SenderStatus.active:
+        raise HTTPException(
+            status_code=400,
+            detail=response_json(False, "Bạn chưa có hồ sơ người gửi. Vui lòng đăng ký trước.")
+        )
+    return sender
+
+def require_shipper(user: User = Depends(require_user)) -> Shipper:
+    shipper = user.shipper
+    if not shipper or not shipper.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail=response_json(False, "Bạn chưa phải là shipper hoặc chưa được duyệt.")
+        )
+    return shipper

@@ -1,16 +1,31 @@
+from datetime import timedelta, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.dependencies import get_db, require_session
+from app.dependencies import get_db, require_session, require_shipper
+from app.models.order import Order, OrderStatus
 from app.models.shipper_application import ShipperApplication, ApplicationStatus
-from app.models.shippper import Shipper
+from app.models.shipper import Shipper
 from app.models.user_session import UserSession
+from app.schemas.order import OrderListRequest
 from app.schemas.shipper import ShipperRegisterRequest
 from app.services.notification_service import notify_user
+from app.socket.ws_store import connected_sessions
 from app.utils import response_json, build_response, to_dict, normalize_phone, normalize_name
 
 router = APIRouter()
 
+@router.get("/")
+def get_shipper(
+    db: Session = Depends(get_db),
+    shipper: Shipper = Depends(require_shipper)
+):
+    return build_response(
+        detail=response_json(
+            True,
+            data= to_dict(shipper) if shipper else None,
+        )
+    )
 @router.get("/info")
 def get_shipper_info(
     db: Session = Depends(get_db),
@@ -49,20 +64,14 @@ async def register_shipper(
     db: Session = Depends(get_db),
     session = Depends(require_session)
 ):
-
-    # ✅ 1. Kiểm tra đã là Shipper hay chưa
-    existing_shipper = db.query(Shipper).filter(
-        Shipper.user_id == session.user.id,
-        Shipper.is_active == True
-    ).first()
-
-    if existing_shipper:
+    #1. Check shipper
+    if session.user.shipper and session.user.shipper.is_active:
         raise HTTPException(
             status_code=400,
             detail=response_json(False, "Bạn đã là Shipper.")
         )
 
-    # ✅ 2. Kiểm tra đơn chờ duyệt
+    #2. Kiểm tra đơn chờ duyệt
     existing_application = db.query(ShipperApplication).filter(
         ShipperApplication.user_id == session.user.id,
         ShipperApplication.status == ApplicationStatus.pending
@@ -106,4 +115,87 @@ async def register_shipper(
 
     return build_response(
         detail=response_json(status=True,message= "Gửi hồ sơ thành công")
+    )
+
+@router.get("/orders")
+def list_orders(
+    payload: OrderListRequest = Depends(),
+    db: Session = Depends(get_db),
+    shipper: Shipper = Depends(require_shipper)
+):
+    now = datetime.now()
+    min_time = now - timedelta(hours=2)
+    max_time = now - timedelta(seconds=30)
+
+    q = (
+        db.query(Order)
+        .filter(
+            Order.status == OrderStatus.pending,
+            Order.create_at >= min_time,
+            Order.create_at <= max_time
+        )
+        .order_by(Order.create_at.desc())
+        .offset(payload.offset)
+        .limit(payload.limit)
+    )
+    items = q.all()
+
+    result = []
+    for order in items:
+        data = to_dict(order)
+        result.append(data)
+
+    return build_response(
+        detail=response_json(
+            status=True,
+            message="Lấy danh sách đơn thành công!",
+            data=result
+        )
+    )
+
+@router.post("/orders/{order_id}/accept")
+async def accept_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    shipper: Shipper = Depends(require_shipper)
+):
+
+    # 2. Kiểm tra đơn tồn tại và đang ở trạng thái pending
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(
+            status_code=404,
+            detail=response_json(False, "Không tìm thấy đơn hàng")
+        )
+
+    if order.status != OrderStatus.pending:
+        raise HTTPException(
+            status_code=400,
+            detail=response_json(False, "Đơn hàng này không còn ở trạng thái chờ nhận")
+        )
+
+    # 3. Nhận đơn
+    order.shipper_id = shipper.id
+    order.status = OrderStatus.picking_up
+    db.commit()
+    db.refresh(order)
+
+    # 4. Gửi thông báo cho người gửi
+    await notify_user(
+        db,
+        order.sender.user_id,
+        "Đơn hàng đã được nhận",
+        f"Shipper {shipper.full_name} đã nhận đơn #{order.id} của bạn.",
+        "sound_up1.wav"
+    )
+
+    for ws in connected_sessions.values():
+        try:
+            if ws.subscribed_order_pending:
+                await ws.send("order_removed", {"order_id": order_id})
+        except Exception as e:
+            print(f"[WS] Lỗi gửi tới session {ws.session_id}: {e}")
+
+    return build_response(
+        detail=response_json(True, "Nhận đơn thành cônng", data={"order_id": order.id})
     )

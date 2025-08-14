@@ -17,6 +17,8 @@ class WebSocketSession:
         self.is_auth = False
         self.db = SessionLocal()
 
+        self.subscribed_order_pending = False
+
     async def listen_message(self):
         self.is_connected = True
         await self.send('auth', {})

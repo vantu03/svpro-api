@@ -79,10 +79,13 @@ async def mark_notification_read(
 
     ws_users = get_ws_by_user(user_id=session.user_id)
     for ws_user in ws_users:
-        await ws_user.send('notification_read', {
-            "id": notification.id,
-            "unread_count": unread_count,
-        },)
+        try:
+            await ws_user.send('notification_read', {
+                "id": notification.id,
+                "unread_count": unread_count,
+            },)
+        except Exception as e:
+            print(f"[WS] Lỗi gửi socket: {e}")
 
     return build_response(
         detail=response_json(

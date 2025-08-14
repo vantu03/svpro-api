@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.notification import Notification, NotificationTarget
@@ -42,21 +43,21 @@ async def notify_user(
     print(f"[FCM] Sending {len(tokens)} tokens: {title} - {content}")
 
     payload_str = build_navigate_payload("/home", {"tab": "notifications"})
-    await send_notification(
-        tokens,
-        title,
-        content,
-        data={"payload": payload_str},
-        sound=sound
+    asyncio.create_task(
+        send_notification(
+            tokens,
+            title,
+            content,
+            data={"payload": payload_str},
+            sound=sound
+        )
     )
 
     # 3. Gửi WebSocket nếu đang online
-    sessions = get_ws_by_user(user_id)
-    print(f"[notify_user] Sockets: {len(sessions)}")
-
-    if sessions:
-        for session in sessions:
-            print(f"[WS] Gửi tới user_id={session.user_id}, session_id={session.session_id}, is_connected={session.is_connected}")
-            if session.is_connected:
-
-                await session.send("notification", to_dict(notification))
+    ws_users = get_ws_by_user(user_id=user_id)
+    print(f"[notify_user] Sockets: {len(ws_users)}")
+    for ws_user in ws_users:
+        try:
+            await ws_user.send("notification", to_dict(notification))
+        except Exception as e:
+            print(f"[WS] Lỗi gửi socket: {e}")
