@@ -18,6 +18,6 @@ class Notification(Base):
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now())
 
     user = relationship("User", back_populates="notifications")

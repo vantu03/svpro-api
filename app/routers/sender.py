@@ -75,7 +75,7 @@ async def register_sender(
 
 @router.get("/orders")
 def list_orders(
-    params: OrderListRequest = Depends(),
+    payload: OrderListRequest = Depends(),
     db: Session = Depends(get_db),
     sender: Sender = Depends(require_sender),
 ):
@@ -84,8 +84,8 @@ def list_orders(
         .options(joinedload(Order.shipper))
         .filter(Order.sender_id == sender.id)
         .order_by(Order.create_at.desc())
-        .offset(params.offset)
-        .limit(params.limit)
+        .offset(payload.offset)
+        .limit(payload.limit)
     )
     items = q.all()
 

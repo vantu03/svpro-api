@@ -15,8 +15,8 @@ class User(Base):
     email = Column(String(120), unique=True, nullable=True)
     is_staff = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime,default=func.now(),  server_default=func.now(), onupdate=func.now())
 
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     uploads = relationship("Upload", back_populates="user", cascade="all, delete-orphan")

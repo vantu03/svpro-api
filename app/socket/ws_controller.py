@@ -33,8 +33,7 @@ class WebsocketController:
                     await self.session.send('auth_done', {})
 
                     print(f"[WS] size: {len(connected_sessions)}")
-                except ExpiredSignatureError as e:
-                    print('Loi xac thuc '+ str(e))
+                except Exception as e:
                     await self.session.send('logout', {})
                     await self.session.send('auth_failed', {"reason": "expired"})
                     await self.session.close()
