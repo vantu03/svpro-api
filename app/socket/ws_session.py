@@ -18,6 +18,8 @@ class WebSocketSession:
         self.db = SessionLocal()
 
         self.subscribed_order_pending = False
+        self.last_location = None
+        self.is_shipper = False
 
     async def listen_message(self):
         self.is_connected = True

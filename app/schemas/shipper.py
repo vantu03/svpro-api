@@ -11,14 +11,14 @@ class ShipperRegisterRequest(BaseModel):
     )
     phone_number: str = Field(
         ...,
-        min_length=9,
-        max_length=20,
+        min_length=10,
+        max_length=12,
         description="Số điện thoại"
     )
     identity_number: str = Field(
         ...,
         min_length=9,
-        max_length=20,
+        max_length=12,
         description="Số CMND/CCCD"
     )
     identity_image_front: str = Field(

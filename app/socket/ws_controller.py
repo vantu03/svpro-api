@@ -29,6 +29,7 @@ class WebsocketController:
                     self.session.user_id = user.id
                     self.session.session_id = user_session.id
                     self.session.is_auth = True
+                    self.session.is_shipper = bool(user.shipper)
                     add_session(self.session)
                     await self.session.send('auth_done', {})
 
@@ -66,5 +67,28 @@ class WebsocketController:
             elif cmd == "unsubscribe_order_pending":
                 self.session.subscribed_order_pending = False
                 await self.session.send("unsubscribed", {"topic": "order_pending"})
+
+            elif cmd == "location":
+                lat = payload.get("latitude")
+                lng = payload.get("longitude")
+                timestamp = payload.get("timestamp")
+
+                self.session.last_location = {
+                    "lat": lat,
+                    "lng": lng,
+                    "timestamp": timestamp,
+                }
+
+                ws_users = get_ws_by_user(user_id=self.session.user_id)
+                if ws_users:
+                    for ws_user in ws_users:
+                        if ws_user != self.session:
+                            await ws_user.send("location_update", {
+                                "user_id": self.session.user_id,
+                                "lat": lat,
+                                "lng": lng,
+                                "timestamp": timestamp,
+                            })
+
     async def cleanup(self):
         pass

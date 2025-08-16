@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, func, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, func, Boolean, Double
 from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
@@ -21,13 +21,20 @@ class Order(Base):
 
     # Người gửi
     sender_id = Column(Integer, ForeignKey("senders.id"), nullable=False)
+
+    sender_name = Column(String(120), nullable=False)
+    sender_phone = Column(String(20), nullable=False)
     pickup_address = Column(String(255), nullable=False)
+    pickup_lat = Column(Double, nullable=False)
+    pickup_lng = Column(Double, nullable=False)
     note = Column(String(500), nullable=True)
 
     # Người nhận (snapshot)
     receiver_name = Column(String(120), nullable=False)
     receiver_phone = Column(String(20), nullable=False)
     receiver_address = Column(String(255), nullable=False)
+    receiver_lat = Column(Double, nullable=True)
+    receiver_lng = Column(Double, nullable=True)
     item_value = Column(Integer, nullable=False)
 
     # Phí ship (VNĐ)

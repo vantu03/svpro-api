@@ -116,11 +116,17 @@ async def create_order(
     # Tạo đơn hàng mới
     order = Order(
         sender_id=sender.id,
+        sender_name=sender.full_name,
+        sender_phone=sender.phone_number,
         pickup_address=payload.pickup_address or sender.default_address,
+        pickup_lat=payload.pickup_lat,
+        pickup_lng=payload.pickup_lng,
         note=payload.note,
         receiver_name=normalize_name(payload.receiver_name),
         receiver_phone=normalize_phone(payload.receiver_phone),
         receiver_address=payload.receiver_address,
+        receiver_lat=payload.receiver_lat,
+        receiver_lng=payload.receiver_lng,
         item_value=payload.item_value,
         shipping_fee=payload.shipping_fee,
     )
@@ -131,9 +137,16 @@ async def create_order(
         db.refresh(order)
     except Exception as e:
         db.rollback()
-        print (str(normalize_phone(payload.receiver_phone)) +" ---- "+ str(payload.receiver_phone))
         print(e)
         raise HTTPException(status_code=500, detail=response_json(False, "Lỗi tạo đơn hàng."))
+
+
+    ws_users = get_ws_by_user(user_id=sender.user_id)
+    for ws_user in ws_users:
+        try:
+            await ws_user.send("order_inserted", to_dict(order))
+        except Exception as e:
+            print(f"[WS] Lỗi gửi socket: {e}")
 
     await notify_user(
         db,
@@ -170,7 +183,6 @@ async def cancel_order(
     order.status = OrderStatus.cancelled
     db.commit()
     db.refresh(order)
-
 
     ws_users = get_ws_by_user(user_id=sender.user_id)
     for ws_user in ws_users:

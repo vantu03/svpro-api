@@ -133,10 +133,12 @@ def normalize_name(name: str) -> str:
 def normalize_phone(phone: str) -> str:
     if not phone or not isinstance(phone, str):
         return ""
+
+    # Bỏ hết ký tự không phải số
     digits = re.sub(r"\D", "", phone)
-    if digits.startswith("84") and len(digits) in (11, 12):
-        digits = "0" + digits[2:]
-    if len(digits) == 10 and digits.startswith("0"):
-        return digits
+
+    # Chỉ lấy 10 số cuối cùng
+    if len(digits) >= 10:
+        return digits[-10:]
 
     return ""
