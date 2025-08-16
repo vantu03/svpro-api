@@ -41,8 +41,6 @@ class ShipperRegisterRequest(BaseModel):
     )
     date_of_birth: date = Field(
         ...,
-        min_length=5,
-        max_length=255,
         description="Ngày sinh"
     )
     gender: str = Field(
