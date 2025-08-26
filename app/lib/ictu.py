@@ -112,6 +112,7 @@ class Ictu:
                     },
                     'hidden': {
                         'Giảng viên': str(df.iloc[i, col_teacher]).strip(),
+                        'Ngày': date.strftime("%d/%m/%Y")
                     },
                 }
 
