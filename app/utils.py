@@ -3,6 +3,8 @@ import pandas as pd, re
 import hashlib
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
+from datetime import datetime, timedelta
+import copy
 
 
 MD5_PATTERN = re.compile(r'^[a-fA-F0-9]{32}$')
@@ -142,3 +144,18 @@ def normalize_phone(phone: str) -> str:
         return digits[-10:]
 
     return ""
+
+def duplicate_by_date(item, start_date, end_date, weekday=None):
+    start = datetime.strptime(start_date, "%d/%m/%Y").date()
+    end = datetime.strptime(end_date, "%d/%m/%Y").date()
+    result = []
+    current = start
+    while current <= end:
+        dow = current.weekday() + 1  # 1..7 (Mon=1 ... Sun=7)
+        if weekday is None or dow == weekday:
+            new_it = copy.deepcopy(item)
+            new_it["date"] = current.strftime("%d/%m/%Y")
+            new_it["dayOfWeek"] = dow
+            result.append(new_it)
+        current += timedelta(days=1)
+    return result
