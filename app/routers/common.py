@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
+from openai import AsyncOpenAI
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.models.banner import Banner
+from app.schemas.conversation import ChatRequest
 from app.utils import response_json, build_response
 
 router = APIRouter()

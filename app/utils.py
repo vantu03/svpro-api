@@ -5,7 +5,9 @@ from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
 from datetime import datetime, timedelta
 import copy
-
+import os
+import aiofiles
+from uuid import uuid4
 
 MD5_PATTERN = re.compile(r'^[a-fA-F0-9]{32}$')
 
@@ -159,3 +161,29 @@ def duplicate_by_date(item, start_date, end_date, weekday=None):
             result.append(new_it)
         current += timedelta(days=1)
     return result
+
+async def save_upload_file(file, upload_folder: str, max_size: int, allowed_exts: set, allowed_mimes: set):
+    ext = os.path.splitext(file.filename)[-1].lower()
+
+    if ext not in allowed_exts or file.content_type not in allowed_mimes:
+        return None, "File type not allowed"
+
+    content = await file.read()
+
+    if len(content) > max_size:
+        return None, f"File exceeds {max_size // (1024 * 1024)}MB limit"
+
+    os.makedirs(upload_folder, exist_ok=True)
+    filename = f"{uuid4().hex}{ext}"
+    saved_path = os.path.join(upload_folder, filename)
+
+    async with aiofiles.open(saved_path, "wb") as out_file:
+        await out_file.write(content)
+
+    return {
+        "filename": filename,
+        "saved_path": saved_path,
+        "size": len(content),
+        "mime_type": file.content_type,
+        "original_name": file.filename
+    }, None
