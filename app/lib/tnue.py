@@ -2,9 +2,10 @@ import httpx, pandas as pd, re
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from io import BytesIO
+from app.utils import duplicate_by_date
 
 from app.utils import extract_form_fields, convert_time_to_minutes, find_text_positions, get_study_time, \
-    clean_full_name, md5_hash_once
+    clean_full_name, md5_hash_once, parse_period_range
 
 
 class Tnue:
@@ -45,7 +46,7 @@ class Tnue:
             return {'error': str(e)}
 
     async def get_schedule(self):
-        #await self.get_lich_hoc()
+        await self.get_lich_hoc()
         await self.get_lich_thi()
 
         self.result['schedule'].sort(key=lambda x: (
@@ -61,12 +62,11 @@ class Tnue:
         return self.result
 
     async def get_lich_hoc(self):
-        res = await self.session.get('https://dangkytinchi.ictu.edu.vn/kcntt/Reports/Form/StudentTimeTable.aspx')
+        res = await self.session.get('http://daotao.dhsptn.edu.vn/dhsp/Reports/Form/StudentTimeTable.aspx')
         soup = BeautifulSoup(res.text, 'html.parser')
         form_data = extract_form_fields(soup.find('form'))
-        # Lấy ngày hiện tại trừ đi 4 năm
-        tu_ngay = datetime.today() - timedelta(days=365 * 4)
-        form_data['txtTuNgay'] = tu_ngay.strftime('%d/%m/%Y')
+
+        form_data['drpType'] = 'B'
         res = await self.session.post(url=res.url, data=form_data)
 
         if not res.headers['Content-Type'].startswith('application/vnd.ms-excel') :
@@ -79,57 +79,51 @@ class Tnue:
         current_week_start = None
         session_counter = {}
 
-        col_teacher = find_text_positions(df, 'Giảng viên/ link meet')[0]['col']
+        col_teacher = find_text_positions(df, 'CBGD')[0]['col']
         col_day = find_text_positions(df, 'Thứ')[0]['col']
         col_period = find_text_positions(df, 'Tiết học')[0]['col']
-        col_room = find_text_positions(df, 'Địa điểm')[0]['col']
+        col_room = find_text_positions(df, 'Phòng học')[0]['col']
+
+        col_time = find_text_positions(df, 'Thời gian học')[0]['col']
 
         for i in range(row_start, len(df)):
-            cell = df.iloc[i, col_class]
+            class_name = str(df.iloc[i, col_class]).strip()
+            if not class_name or class_name.lower().startswith("nan"):
+                continue
 
-            if isinstance(cell, str) and cell.startswith("Tuần"):
-                match = re.search(r"\((\d{2}/\d{2}/\d{4}) đến (\d{2}/\d{2}/\d{4})\)", cell)
-                if match:
-                    current_week_start = datetime.strptime(match.group(1), "%d/%m/%Y")
-            elif pd.notna(cell) and current_week_start:
+            # Lấy thứ trong tuần
+            weekday = int(str(df.iloc[i, col_day]).strip())
 
-                weekday = int(str(df.iloc[i, col_day]).strip())
-                date = current_week_start + timedelta(days=weekday - 2)
+            # Lấy tiết học
+            period_raw = str(df.iloc[i, col_period]).strip()
 
-                session_counter.setdefault(cell, 0)
-                session_counter[cell] += 1
+            # Lấy thời gian học (dạng dd/MM/yyyy-dd/MM/yyyy)
+            time_range = str(df.iloc[i, col_time]).strip()
+            match = re.search(r"(\d{2}/\d{2}/\d{4})-(\d{2}/\d{2}/\d{4})", time_range)
+            if match:
+                start_date = match.group(1)  # string dd/MM/yyyy
+                end_date = match.group(2)  # string dd/MM/yyyy
 
+                tiet_start, tiet_end, tiet_str = parse_period_range(str(df.iloc[i, col_period]).strip())
                 lichhoc = {
-                    'date': date.strftime("%d/%m/%Y") if date else None,
+                    'date': None,  # sẽ được duplicate_by_date gán lại
                     'dayOfWeek': weekday,
-                    'className': cell,
+                    'className': class_name,
                     'scheduleType': 'Lịch học',
-                    'timeRange': '00:00',
+                    'timeRange': get_study_time(tiet_start, tiet_end),
                     'detail': {
-                        'Tiết': '',
+                        'Tiết': tiet_str,
                         'Địa điểm': str(df.iloc[i, col_room]).strip(),
-                        'Buổi': session_counter[cell],
                     },
                     'hidden': {
                         'Giảng viên': str(df.iloc[i, col_teacher]).strip(),
+                        'Thời gian học': time_range
                     },
                 }
 
-                self.result['schedule'].append(lichhoc)
-
-                period_raw = str(df.iloc[i, col_period]).strip()
-                try:
-                    parts = [int(p.strip()) for p in period_raw.split('-->')]
-                    if len(parts) == 2:
-                        tiet_start, tiet_end = parts
-                        lichhoc['detail']['Tiết'] = ", ".join(str(i) for i in range(tiet_start, tiet_end + 1))
-                        lichhoc['timeRange'] = get_study_time(tiet_start, tiet_end)
-                    elif len(parts) == 1:
-                        tiet_start = tiet_end = parts[0]
-                        lichhoc['detail']['Tiết'] = [tiet_start]
-                        lichhoc['timeRange'] = get_study_time(tiet_start, tiet_end)
-                except:
-                    pass
+                # duplicate_by_date trả về list
+                items = duplicate_by_date(lichhoc, start_date, end_date, weekday)
+                self.result['schedule'].extend(items)
 
     async def get_lich_thi(self):
         res = await self.session.get('http://daotao.dhsptn.edu.vn/dhsp/StudentViewExamList.aspx')

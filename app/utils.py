@@ -112,6 +112,35 @@ def convert_time_to_minutes(time_range):
     return int(match.group(1)) * 60 + int(match.group(2)) if match else -1
 
 
+def parse_period_range(period_raw: str):
+    if not period_raw:
+        return None, None, ""
+    s = str(period_raw).strip()
+
+    # Dạng "1-->3"
+    m = re.match(r'^(\d+)\s*-->\s*(\d+)$', s)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        rng = list(range(min(a, b), max(a, b) + 1))
+        return min(rng), max(rng), ",".join(str(x) for x in rng)
+
+    # Dạng "1-3"
+    m = re.match(r'^(\d+)\s*-\s*(\d+)$', s)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        rng = list(range(min(a, b), max(a, b) + 1))
+        return min(rng), max(rng), ",".join(str(x) for x in rng)
+
+    # Dạng "1,2,3" hoặc "2" hoặc "2, 3"
+    nums = re.findall(r'\d+', s)
+    if nums:
+        nums = [int(x) for x in nums]
+        start = min(nums)
+        end = max(nums)
+        return start, end, ",".join(str(x) for x in nums)
+
+    return None, None, ""
+
 
 def clean_full_name(value):
     value = str(value).strip()

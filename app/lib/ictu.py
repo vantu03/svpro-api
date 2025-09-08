@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 
 from app.utils import extract_form_fields, convert_time_to_minutes, find_text_positions, get_study_time, \
-    clean_full_name, md5_hash_once
+    clean_full_name, md5_hash_once, parse_period_range
 
 
 class Ictu:
@@ -99,14 +99,16 @@ class Ictu:
                 session_counter.setdefault(cell, 0)
                 session_counter[cell] += 1
 
+                tiet_start, tiet_end, tiet_str = parse_period_range(str(df.iloc[i, col_period]).strip())
+
                 lichhoc = {
                     'date': date.strftime("%d/%m/%Y") if date else None,
                     'dayOfWeek': weekday,
                     'className': cell,
                     'scheduleType': 'Lịch học',
-                    'timeRange': '00:00',
+                    'timeRange': get_study_time(tiet_start, tiet_end),
                     'detail': {
-                        'Tiết': '',
+                        'Tiết': tiet_str,
                         'Địa điểm': str(df.iloc[i, col_room]).strip(),
                         'Buổi': session_counter[cell],
                     },
@@ -117,20 +119,6 @@ class Ictu:
                 }
 
                 self.result['schedule'].append(lichhoc)
-
-                period_raw = str(df.iloc[i, col_period]).strip()
-                try:
-                    parts = [int(p.strip()) for p in period_raw.split('-->')]
-                    if len(parts) == 2:
-                        tiet_start, tiet_end = parts
-                        lichhoc['detail']['Tiết'] = ", ".join(str(i) for i in range(tiet_start, tiet_end + 1))
-                        lichhoc['timeRange'] = get_study_time(tiet_start, tiet_end)
-                    elif len(parts) == 1:
-                        tiet_start = tiet_end = parts[0]
-                        lichhoc['detail']['Tiết'] = [tiet_start]
-                        lichhoc['timeRange'] = get_study_time(tiet_start, tiet_end)
-                except:
-                    pass
 
     async def get_lich_thi(self):
         res = await self.session.get('http://dangkytinchi.ictu.edu.vn/kcntt/StudentViewExamList.aspx')
