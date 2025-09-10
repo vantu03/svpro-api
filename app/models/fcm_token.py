@@ -10,6 +10,7 @@ class FCMToken(Base):
     token = Column(String(512), nullable=False, unique=True)
     device_info = Column(String(255), nullable=True)
     session_id = Column(Integer, ForeignKey("user_sessions.id"), nullable=False)
-    created_at = Column(DateTime, default=func.now(), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now(), onupdate=func.now())
 
     session = relationship("UserSession", back_populates="fcm_token")

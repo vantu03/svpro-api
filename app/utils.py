@@ -216,3 +216,19 @@ async def save_upload_file(file, upload_folder: str, max_size: int, allowed_exts
         "mime_type": file.content_type,
         "original_name": file.filename
     }, None
+
+
+def is_outdated(current: str, latest: str) -> bool:
+    try:
+        c = list(map(int, current.split(".")))
+        l = list(map(int, latest.split(".")))
+        for i in range(len(l)):
+            if i >= len(c):
+                return True
+            if c[i] < l[i]:
+                return True
+            if c[i] > l[i]:
+                return False
+        return False
+    except Exception:
+        return False

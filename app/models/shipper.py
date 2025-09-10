@@ -14,17 +14,9 @@ class Shipper(Base):
     phone_number = Column(String(20), nullable=False)
     avatar_url = Column(String(1000), nullable=True)
 
-    create_at = Column(
-        DateTime,
-        default=func.now(),
-        server_default=func.now()
-    )
-    update_at = Column(
-        DateTime,
-        default=func.now(),
-        server_default=func.now(),
-        onupdate=func.now()
-    )
+
+    created_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now(), onupdate=func.now())
     is_active = Column(Boolean, default=True)
 
     user = relationship("User", back_populates="shipper", uselist=False)

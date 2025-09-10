@@ -9,7 +9,8 @@ class UserSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(ForeignKey("users.id"), nullable=False)
     device_info = Column(String(255))
-    created_at = Column(DateTime, default=func.now(), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now(), onupdate=func.now())
     expired_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
 

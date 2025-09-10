@@ -19,6 +19,7 @@ from app.models.notification import Notification
 from app.models.banner import Banner
 from app.models.upload import Upload
 from app.models.fcm_token import FCMToken
+from app.models.app_version import AppVersion
 from app.services.notification_service import notify_user
 
 settings = get_settings()
@@ -75,14 +76,22 @@ class AdminAuth(AuthenticationBackend):
 class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.username, User.full_name, User.email]
 
+    form_excluded_columns = ["created_at", "updated_at"]
+
 class UserSessionAdmin(ModelView, model=UserSession):
     column_list = [UserSession.id, UserSession.user_id, UserSession.fcm_token, UserSession.created_at]
 
+    form_excluded_columns = ["created_at", "updated_at"]
+
 class ShipperAdmin(ModelView, model=Shipper):
-    column_list = [Shipper.id, Shipper.user_id, Shipper.is_active, Shipper.application_id, Shipper.create_at]
+    column_list = [Shipper.id, Shipper.user_id, Shipper.is_active, Shipper.application_id, Shipper.created_at]
+
+    form_excluded_columns = ["created_at", "updated_at"]
 
 class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
     column_list = [ShipperApplication.id, Shipper.user_id, ShipperApplication.status, ShipperApplication.created_at]
+
+    #form_excluded_columns = ["created_at", "updated_at"]
 
     form_columns = ["phone_number", "full_name", "status", "reject_reason"]
 
@@ -139,16 +148,24 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
                 )
 
 class SenderAdmin(ModelView, model=Sender):
-    column_list = [Sender.id, Sender.user_id, Sender.status, Sender.create_at]
+    column_list = [Sender.id, Sender.user_id, Sender.status, Sender.created_at]
+
+    form_excluded_columns = ["created_at", "updated_at"]
 
 class OrderAdmin(ModelView, model=Order):
-    column_list = [Order.id, Order.sender_id, Order.receiver_name, Order.status, Order.create_at]
+    column_list = [Order.id, Order.sender_id, Order.receiver_name, Order.status, Order.created_at]
+
+    form_excluded_columns = ["created_at", "updated_at"]
 
 class NotificationAdmin(ModelView, model=Notification):
     column_list = [Notification.id, Notification.user_id, Notification.title, Notification.content, Notification.is_read]
 
+    form_excluded_columns = ["created_at", "updated_at"]
+
 class BannerAdmin(ModelView, model=Banner):
     column_list = [Banner.id, "url", Banner.created_at, Banner.created_at]
+
+    form_excluded_columns = ["created_at", "updated_at"]
 
     column_formatters = {
         "url": lambda m, a: Markup(f'<img src="{m.url}" style="width: 200px;">'),
@@ -160,7 +177,9 @@ class BannerAdmin(ModelView, model=Banner):
 
 
 class UploadAdmin(ModelView, model=Upload):
-    column_list = [Upload.id, Upload.url, Upload.file_name, Upload.uploaded_at]
+    column_list = [Upload.id, Upload.url, Upload.file_name, Upload.created_at]
+
+    form_excluded_columns = ["created_at", "updated_at"]
 
     column_formatters = {
         "url": lambda m, a: Markup(f'<img src="{m.url}" style="width: 200px;">'),
@@ -174,6 +193,19 @@ class UploadAdmin(ModelView, model=Upload):
 class FCMTokenAdmin(ModelView, model=FCMToken):
     column_list = [FCMToken.id, FCMToken.session, FCMToken.token]
 
+    form_excluded_columns = ["created_at", "updated_at"]
+
+class AppVersionAdmin(ModelView, model=AppVersion):
+    column_list = [
+        AppVersion.id,
+        AppVersion.platform,
+        AppVersion.latest_version,
+        AppVersion.title,
+        AppVersion.created_at,
+        AppVersion.updated_at,
+    ]
+
+    form_excluded_columns = ["created_at", "updated_at"]
 
 # Hàm khởi tạo admin
 def setup_admin(app, engine):
@@ -189,3 +221,4 @@ def setup_admin(app, engine):
     admin.add_view(BannerAdmin)
     admin.add_view(UploadAdmin)
     admin.add_view(FCMTokenAdmin)
+    admin.add_view(AppVersionAdmin)

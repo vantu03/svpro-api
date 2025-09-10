@@ -47,8 +47,8 @@ class Order(Base):
     # Trạng thái đơn hàng
     status = Column(Enum(OrderStatus), default=OrderStatus.pending, nullable=False)
 
-    create_at = Column(DateTime, default=func.now(), server_default=func.now())
-    update_at = Column(DateTime, default=func.now(), server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime, default=func.now(), server_default=func.now(), onupdate=func.now())
 
     sender = relationship("Sender", back_populates="orders")
     shipper = relationship("Shipper", back_populates="orders")

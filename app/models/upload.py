@@ -21,6 +21,8 @@ class Upload(Base):
     file_type = Column(Enum(FileType), default=FileType.other)
     mime_type = Column(String(50), nullable=True)
     size = Column(Integer, nullable=True)
-    uploaded_at = Column(DateTime, default=func.now(), server_default=func.now())
+
+    created_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="uploads")

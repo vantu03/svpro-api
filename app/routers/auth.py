@@ -23,6 +23,23 @@ PROVIDERS = {
 router = APIRouter()
 settings = get_settings()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+@router.get("/login/config")
+def config():
+    return build_response(
+        status_code=200,
+        detail=response_json(
+            status=True,
+            message='Lấy cấu hình đăng nhập thành côn ',
+            data={
+              "login_url": "https://sv.pro.vn/login.html",
+              "success_url": "https://sv.pro.vn/login-success",
+              "method": "webview",
+            }
+        )
+    )
+
 @router.post("/login")
 async def login(
     data: LoginRequest,

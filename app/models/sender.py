@@ -19,8 +19,8 @@ class Sender(Base):
     default_address = Column(String(255), nullable=True)
     status = Column(Enum(SenderStatus), default=SenderStatus.active, nullable=False)
 
-    create_at = Column(DateTime, default=func.now(), server_default=func.now())
-    update_at = Column(DateTime, default=func.now(), server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime, default=func.now(), server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="sender")
     orders = relationship("Order", back_populates="sender", cascade="all, delete-orphan")
