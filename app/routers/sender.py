@@ -21,7 +21,7 @@ def get_sender_info(
     sender = (
         db.query(Sender)
         .filter(Sender.user_id == session.user_id, Sender.status == SenderStatus.active)
-        .order_by(Sender.create_at.desc())  # fix: created_at
+        .order_by(Sender.created_at.desc())  # fix: created_at
         .first()
     )
     return build_response(
@@ -83,7 +83,7 @@ def list_orders(
         db.query(Order)
         .options(joinedload(Order.shipper))
         .filter(Order.sender_id == sender.id)
-        .order_by(Order.create_at.desc())
+        .order_by(Order.created_at.desc())
         .offset(payload.offset)
         .limit(payload.limit)
     )

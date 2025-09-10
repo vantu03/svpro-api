@@ -36,7 +36,7 @@ def get_shipper_info(
     shipper = (
         db.query(Shipper)
         .filter(Shipper.user_id == session.user_id, Shipper.is_active == True)
-        .order_by(Shipper.create_at.desc())
+        .order_by(Shipper.created_at.desc())
         .first()
     )
 
@@ -131,10 +131,10 @@ def list_orders(
         db.query(Order)
         .filter(
             Order.status == OrderStatus.pending,
-            Order.create_at >= min_time,
-            Order.create_at <= max_time
+            Order.created_at >= min_time,
+            Order.created_at <= max_time
         )
-        .order_by(Order.create_at.desc())
+        .order_by(Order.created_at.desc())
         .offset(payload.offset)
         .limit(payload.limit)
     )

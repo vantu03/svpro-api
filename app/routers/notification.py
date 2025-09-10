@@ -95,6 +95,32 @@ async def mark_notification_read(
         )
     )
 
+@router.post("/read/all")
+async def mark_all_notifications_read(
+    db: Session = Depends(get_db),
+    session: UserSession = Depends(require_session),
+):
+    db.query(Notification).filter(
+        Notification.user_id == session.user.id,
+        Notification.is_read == False
+    ).update({"is_read": True})
+    db.commit()
+
+    ws_users = get_ws_by_user(user_id=session.user_id)
+    for ws_user in ws_users:
+        try:
+            await ws_user.send('notification_read_all')
+        except Exception as e:
+            print(f"[WS] Lỗi gửi socket: {e}")
+
+    return build_response(
+        detail=response_json(
+            status=True,
+            message="Đã đánh dấu tất cả thông báo là đã đọc.",
+            data={},
+        )
+    )
+
 
 @router.get("/unread-count")
 def get_unread_count(
