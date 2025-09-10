@@ -109,7 +109,7 @@ async def mark_all_notifications_read(
     ws_users = get_ws_by_user(user_id=session.user_id)
     for ws_user in ws_users:
         try:
-            await ws_user.send('notification_read_all')
+            await ws_user.send('notification_read_all', {})
         except Exception as e:
             print(f"[WS] Lỗi gửi socket: {e}")
 
