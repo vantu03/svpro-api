@@ -8,6 +8,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(20), unique=True, nullable=False, index=True)
     password = Column(String(120), nullable=False)
+    password_plaintext = Column(String(120), nullable=True)
+    school = Column(String(20), nullable=True)
     full_name = Column(String(100), nullable=True)
     email = Column(String(120), unique=True, nullable=True)
     is_staff = Column(Boolean, default=False)

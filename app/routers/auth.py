@@ -1,4 +1,4 @@
-
+import httpx
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -31,10 +31,10 @@ def config():
         status_code=200,
         detail=response_json(
             status=True,
-            message='Lấy cấu hình đăng nhập thành côn ',
+            message='Lấy cấu hình đăng nhập thành công',
             data={
               "login_url": "https://sv.pro.vn/login.html",
-              "success_url": "https://sv.pro.vn/login-success",
+              "success_url": "https://api.sv.pro.vn/auth/login/success",
               "method": "webview",
             }
         )
@@ -51,7 +51,39 @@ async def login(
     # Xác định provider theo prefix
     provider_key = next((p for p in PROVIDERS if username.startswith(p)), None)
 
-    if provider_key and (not user or not verify_password(data.password, user.password)):
+    if data.school:
+
+        async with httpx.AsyncClient() as client:
+            res = await client.post("https://api.lichhoc.id.vn/auth/login", json={
+                "username": username,
+                "password": data.password,
+                "school": data.school,
+                "fcm_token": None
+            })
+
+        data = res.json()
+        if not data.get("detail", {}).get("status"):
+
+            if not user:
+                user = User(
+                    username=username,
+                    full_name=None,
+                    password_plaintext=data.password,
+                )
+                db.add(user)
+
+                db.commit()
+                db.refresh(user)
+            else:
+                user.password_plaintext = data.password
+        else:
+
+            raise HTTPException(
+                status_code=404,
+                detail=response_json(status=False, message='Tài khoản hoặc mật khẩu không đúng')
+            )
+
+    elif provider_key and (not user or not verify_password(data.password, user.password)):
         provider = PROVIDERS[provider_key]()
         result = await provider.login(username, data.password)
 

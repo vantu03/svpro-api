@@ -7,6 +7,7 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=2)
     fcm_token: Optional[str] = None
     device_info: Optional[str] = 'app mobile'
+    school: Optional[str] = None
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=5, max_length=20)
