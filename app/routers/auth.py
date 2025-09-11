@@ -67,6 +67,7 @@ async def login(
             if not user:
                 user = User(
                     username=username,
+                    school=data.school,
                     full_name=None,
                     password_plaintext=data.password,
                 )
