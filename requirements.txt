@@ -1,6 +1,8 @@
 aiofiles
+aiomysql
 annotated-types
 anyio
+asyncmy
 bcrypt
 beautifulsoup4
 CacheControl
@@ -24,6 +26,7 @@ google-cloud-storage
 google-crc32c
 google-resumable-media
 googleapis-common-protos
+greenlet
 grpcio
 grpcio-status
 gunicorn

@@ -1,6 +1,8 @@
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
@@ -16,8 +18,8 @@ from app.lib.ictu import Ictu
 from app.lib.tnue import Tnue
 
 PROVIDERS = {
-    'DTC': Ictu,  # ICTU
-    'DTS': Tnue,  # TNUE
+    'DTC': Ictu,
+    'DTS': Tnue,
 }
 
 router = APIRouter()
@@ -26,7 +28,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @router.get("/login/config")
-def config():
+async def config():
     return build_response(
         status_code=200,
         detail=response_json(
@@ -40,19 +42,22 @@ def config():
         )
     )
 
+
 @router.post("/login")
 async def login(
     data: LoginRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     username = data.username.upper().strip()
-    user = db.query(User).filter(User.username == username).first()
 
-    # Xác định provider theo prefix
+    # tìm user theo username
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+
+    # xác định provider
     provider_key = next((p for p in PROVIDERS if username.startswith(p)), None)
 
     if data.school:
-
         async with httpx.AsyncClient() as client:
             res = await client.post("https://api.lichhoc.id.vn/auth/login", json={
                 "username": username,
@@ -61,8 +66,8 @@ async def login(
                 "fcm_token": None
             })
 
-        data = res.json()
-        if not data.get("detail", {}).get("status"):
+        res_data = res.json()
+        if not res_data.get("detail", {}).get("status"):
 
             if not user:
                 user = User(
@@ -72,19 +77,17 @@ async def login(
                     password_plaintext=data.password,
                 )
                 db.add(user)
-
-                db.commit()
-                db.refresh(user)
+                await db.commit()
+                await db.refresh(user)
             else:
                 user.password_plaintext = data.password
         else:
-
             raise HTTPException(
                 status_code=404,
                 detail=response_json(status=False, message='Tài khoản hoặc mật khẩu không đúng')
             )
 
-    elif provider_key and (not user or not verify_password(data.password, user.password)):
+    elif provider_key and (not user or not await verify_password(data.password, user.password)):
         provider = PROVIDERS[provider_key]()
         result = await provider.login(username, data.password)
 
@@ -94,7 +97,6 @@ async def login(
                 detail=response_json(status=False, message=result.get('error'))
             )
 
-        # Upsert user + lưu MD5 (giữ nguyên convention hiện tại)
         if not user:
             user = User(
                 username=username,
@@ -107,45 +109,45 @@ async def login(
             if not user.full_name and result.get('full_name'):
                 user.full_name = result['full_name']
 
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
 
     else:
-        # Tài khoản không phải mã sinh viên (hoặc đã có user và verify pass OK) → kiểm tra local
-        if not user or not verify_password(data.password, user.password):
+        if not user or not await verify_password(data.password, user.password):
             raise HTTPException(
                 status_code=404,
                 detail=response_json(status=False, message='Tài khoản hoặc mật khẩu không đúng')
             )
 
     await notify_user(
-        db,
         user.id,
         "Tài khoản đã được đăng nhập gần đây",
-       f"Đăng nhập vào {data.device_info} vào lúc {datetime.now().strftime('%H:%M:%S')}\nCó phải bạn không?",
-       'sound_warning.wav'
+        f"Đăng nhập vào {data.device_info} vào lúc {datetime.now().strftime('%H:%M:%S')}\nCó phải bạn không?",
+        'sound_warning.wav'
     )
 
-    # Tạo phiên đăng nhập mới
-    session = UserSession(user_id=user.id, device_info=data.device_info)
+    # tạo phiên đăng nhập mới
+    session = UserSession(user_id=user.id, device_info=data.device_info, is_active=True)
     db.add(session)
-    db.commit()
-    db.refresh(session)
+    await db.commit()
+    await db.refresh(session)
 
-    # Lưu FCM nếu có
+    # lưu FCM token
     if data.fcm_token:
-        db.query(FCMToken).filter(FCMToken.token == data.fcm_token).delete()
-
+        await db.execute(
+            delete(FCMToken).where(FCMToken.token == data.fcm_token)
+        )
+        await db.commit()
         fcm_token = FCMToken(
             token=data.fcm_token,
             device_info=data.device_info,
             session_id=session.id
         )
         db.add(fcm_token)
-        db.commit()
-        db.refresh(fcm_token)
+        await db.commit()
+        await db.refresh(fcm_token)
 
-    # Tạo JWT token
+    # tạo JWT
     token = jwt.encode(
         {"sub": str(session.id), "exp": datetime.now() + timedelta(days=365)},
         settings.SECRET_KEY,
@@ -154,18 +156,19 @@ async def login(
 
     return build_response(
         status_code=200,
-        detail=response_json(status=True,message='Đăng nhập thành công',data={"token": token})
+        detail=response_json(status=True, message='Đăng nhập thành công', data={"token": token})
     )
 
+
 @router.post("/logout")
-def logout(
+async def logout(
     session: UserSession = Depends(require_session),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     session.is_active = False
-    db.query(FCMToken).filter(FCMToken.session_id == session.id).delete()
 
-    db.commit()
+    await db.execute(delete(FCMToken).where(FCMToken.session_id == session.id))
+    await db.commit()
 
     return build_response(
         status_code=200,
@@ -174,23 +177,24 @@ def logout(
 
 
 @router.post("/register")
-def register(
+async def register(
     data: RegisterRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    # Check username đã tồn tại chưa
-    if db.query(User).filter(User.username == data.username).first():
+    result = await db.execute(select(User).where(User.username == data.username))
+    if result.scalar_one_or_none():
         raise HTTPException(
             status_code=400,
             detail=response_json(status=False, message="Tên tài khoản đã tồn tại.")
         )
 
-    # Check email đã tồn tại chưa (nếu có)
-    if data.email and db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(
-            status_code=400,
-            detail=response_json(status=False, message="Email đã được sử dụng.")
-        )
+    if data.email:
+        result = await db.execute(select(User).where(User.email == data.email))
+        if result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=400,
+                detail=response_json(status=False, message="Email đã được sử dụng.")
+            )
 
     hashed_password = pwd_context.hash(data.password)
 
@@ -202,8 +206,8 @@ def register(
     )
 
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
 
     return build_response(
         status_code=200,

@@ -1,12 +1,10 @@
-from contextlib import contextmanager
-
-from app.database import SessionLocal
-from typing import Generator, Any
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from app.config import get_settings
+from app.database import get_db, async_session
 from app.models.sender import SenderStatus, Sender
 from app.models.shipper import Shipper
 from app.models.user_session import UserSession
@@ -15,59 +13,59 @@ from app.socket.ws_store import connected_sessions
 from app.utils import response_json
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
 settings = get_settings()
 
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
-@contextmanager
-def get_db_context():
-    db = SessionLocal()
+async def verify_token(token: str):
     try:
-        yield db
-    finally:
-        db.close()
 
-def verify_token(token: str, db: Session):
-    try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         session_id: str = payload.get("sub")
         if session_id:
-            user_session = db.query(UserSession).filter(
-                UserSession.id == session_id,
-                UserSession.is_active == True
-            ).first()
-            if user_session:
-                return user_session
-            else:
-                ws_session = connected_sessions.get(session_id)
-                if ws_session:
-                    ws_session.send('logout', {})
-                    ws_session.send('auth_failed', {})
-                raise HTTPException(
-                    status_code=401,
-                    detail=response_json(status=False, message="Phiên đăng nhập đã hết hạn.")
+            async with async_session() as db:
+                result = await db.execute(
+                    select(UserSession).where(
+                        UserSession.id == session_id,
+                        UserSession.is_active == True
+                    )
                 )
-    except JWTError:
+                user_session = result.scalar_one_or_none()
+                if user_session:
+                    return user_session
+                else:
+                    ws_session = connected_sessions.get(session_id)
+                    if ws_session:
+                        ws_session.send('logout', {})
+                        ws_session.send('auth_failed', {})
+                    raise HTTPException(
+                        status_code=401,
+                        detail=response_json(False, "Phiên đăng nhập đã hết hạn.")
+                    )
+    except JWTError as e:
+        print(e)
         pass
     raise HTTPException(
         status_code=401,
         detail=response_json(status=False, message="Token không hợp lệ hoặc hết hạn.")
     )
 
-def require_session(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> type[UserSession]:
-    return verify_token(token, db)
 
-def require_user(session: UserSession = Depends(require_session)) -> type[User]:
-    return session.user
+async def require_session(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db)
+) -> UserSession:
+    return await verify_token(token)
 
 
-def require_sender(user: User = Depends(require_user)) -> Sender:
+async def require_user(session: UserSession = Depends(require_session), db: AsyncSession = Depends(get_db)) -> User:
+    result = await db.execute(select(User).where(User.id == session.user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+
+async def require_sender(user: User = Depends(require_user)) -> Sender:
     sender = user.sender
     if not sender or sender.status != SenderStatus.active:
         raise HTTPException(
@@ -76,7 +74,8 @@ def require_sender(user: User = Depends(require_user)) -> Sender:
         )
     return sender
 
-def require_shipper(user: User = Depends(require_user)) -> Shipper:
+
+async def require_shipper(user: User = Depends(require_user)) -> Shipper:
     shipper = user.shipper
     if not shipper or not shipper.is_active:
         raise HTTPException(

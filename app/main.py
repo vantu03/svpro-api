@@ -1,17 +1,34 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from app.admin import  setup_admin
+from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
+
+from app.admin import setup_admin
 from app.database import Base, engine
 from app.services.firebase_service import initialize_firebase
-from app.routers import auth, user, common, shipper, upload, notification, websocket, sender, conversations, application
-from fastapi.staticfiles import StaticFiles
+from app.routers import (
+    auth, user, common, shipper, upload,
+    notification, websocket, sender, conversations, application
+)
 
-app = FastAPI()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Init Firebase
+    initialize_firebase()
+
+    # Init database (tạo bảng nếu chưa có)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+# Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-initialize_firebase()
-
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,8 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Base.metadata.create_all(bind=engine)
-
+# Routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(user.router, prefix="/user", tags=["user"])
 app.include_router(shipper.router, prefix="/shipper", tags=["shipper"])
@@ -33,7 +49,9 @@ app.include_router(upload.router, prefix="/upload", tags=["upload"])
 app.include_router(notification.router, prefix="/notification", tags=["notification"])
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 
+# Admin setup
 setup_admin(app, engine)
+
 @app.get("/")
 def read_root():
     return {"message": "Server is running"}

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import require_session, get_db
 from app.models.upload import Upload, FileType
 from app.models.user_session import UserSession
@@ -11,7 +11,6 @@ UPLOAD_FOLDER = "static/uploads"
 MAX_FILE_SIZE_MB = 10
 MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024
 
-# Cho phép nhiều loại file hơn
 ALLOWED_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".webp",
     ".pdf", ".doc", ".docx", ".txt", ".zip", ".rar"
@@ -27,12 +26,13 @@ ALLOWED_MIME_TYPES = {
     "application/x-rar-compressed"
 }
 
+
 @router.post("/image")
 async def upload_image(
     file: UploadFile = File(...),
     file_type: FileType = Form(...),
     request: Request = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     session: UserSession = Depends(require_session),
 ):
     result, error = await save_upload_file(
@@ -59,8 +59,8 @@ async def upload_image(
     )
 
     db.add(upload)
-    db.commit()
-    db.refresh(upload)
+    await db.commit()
+    await db.refresh(upload)
 
     return build_response(
         detail=response_json(
@@ -81,7 +81,7 @@ async def upload_any_file(
     file: UploadFile = File(...),
     file_type: FileType = Form(...),
     request: Request = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     session: UserSession = Depends(require_session),
 ):
     result, error = await save_upload_file(
@@ -108,8 +108,8 @@ async def upload_any_file(
     )
 
     db.add(upload)
-    db.commit()
-    db.refresh(upload)
+    await db.commit()
+    await db.refresh(upload)
 
     return build_response(
         detail=response_json(

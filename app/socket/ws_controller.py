@@ -1,6 +1,6 @@
-from jose import ExpiredSignatureError
 
 from app.dependencies import verify_token
+from app.models.user_session import UserSession
 from app.services.notification_service import notify_user
 from app.socket.ws_store import add_session, get_ws_by_user, connected_sessions
 
@@ -22,18 +22,17 @@ class WebsocketController:
                     return
 
                 try:
-                    user_session = verify_token(token, self.session.db)
-                    user = user_session.user
+                    user_session: UserSession = await verify_token(token)
+                    if not user_session:
 
-                    # Gán thông tin user/session vào WebSocketSession
-                    self.session.user_id = user.id
-                    self.session.session_id = user_session.id
-                    self.session.is_auth = True
-                    self.session.is_shipper = bool(user.shipper)
-                    add_session(self.session)
-                    await self.session.send('auth_done', {})
+                        # Gán thông tin user/session vào WebSocketSession
+                        self.session.user_id = user_session.user_id
+                        self.session.session_id = user_session.id
+                        self.session.is_auth = True
+                        add_session(self.session)
+                        await self.session.send('auth_done', {})
 
-                    print(f"[WS] size: {len(connected_sessions)}")
+                        print(f"[WS] size: {len(connected_sessions)}")
                 except Exception as e:
                     await self.session.send('logout', {})
                     await self.session.send('auth_failed', {"reason": "expired"})

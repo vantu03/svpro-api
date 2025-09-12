@@ -1,47 +1,41 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
-from sqlalchemy.orm import Session
-from app.dependencies import get_db, require_session
+from sqlalchemy import func, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from app.dependencies import get_db, require_user
 from app.models.notification import Notification
-from app.models.user_session import UserSession
+from app.models.user import User
 from app.schemas.notification import NotificationListRequest, NotificationUpdateRequest
 from app.socket.ws_store import get_ws_by_user
 from app.utils import response_json, build_response, to_dict
 
 router = APIRouter()
 
+
 @router.get("/")
-def get_notifications(
+async def get_notifications(
     data: NotificationListRequest = Depends(),
-    db: Session = Depends(get_db),
-    session: UserSession = Depends(require_session),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
 ):
-    # Tạo câu query cơ bản
-    q = db.query(Notification).filter(Notification.user_id == session.user.id)
+    stmt = select(Notification).where(Notification.user_id == user.id)
 
-    # Lọc theo status nếu có
-    if data.status:
-        if data.status == "unread":
-            q = q.filter(Notification.is_read == False)
-        elif data.status == "read":
-            q = q.filter(Notification.is_read == True)
+    # filter theo status
+    if data.status == "unread":
+        stmt = stmt.where(Notification.is_read == False)
+    elif data.status == "read":
+        stmt = stmt.where(Notification.is_read == True)
 
-    # Sắp xếp và phân trang
-    notifications = (
-        q.order_by(Notification.created_at.desc())
-        .offset(data.offset)
-        .limit(data.limit)
-        .all()
-    )
+    stmt = stmt.order_by(Notification.created_at.desc()).offset(data.offset).limit(data.limit)
 
-    # Chuyển kết quả thành list dict
-    result = [to_dict(n) for n in notifications]
+    result = await db.execute(stmt)
+    notifications = result.scalars().all()
 
     return build_response(
         detail=response_json(
             status=True,
             message="Lấy danh sách thông báo thành công!",
-            data=result
+            data=[to_dict(n) for n in notifications],
         )
     )
 
@@ -49,13 +43,16 @@ def get_notifications(
 @router.post("/read")
 async def mark_notification_read(
     payload: NotificationUpdateRequest,
-    db: Session = Depends(get_db),
-    session: UserSession = Depends(require_session),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
 ):
-    notification = db.query(Notification).filter(
-        Notification.id == payload.id,
-        Notification.user_id == session.user.id,
-    ).first()
+    result = await db.execute(
+        select(Notification).where(
+            Notification.id == payload.id,
+            Notification.user_id == user.id,
+        )
+    )
+    notification = result.scalar_one_or_none()
 
     if not notification:
         return build_response(
@@ -67,23 +64,25 @@ async def mark_notification_read(
 
     if not notification.is_read:
         notification.is_read = True
-        db.commit()
-        db.refresh(notification)
+        await db.commit()
+        await db.refresh(notification)
 
-
-    unread_count = (
-        db.query(Notification)
-        .filter(Notification.user_id == session.user.id, Notification.is_read == False)
-        .count()
+    # đếm lại số unread
+    result = await db.execute(
+        select(func.count(Notification.id)).where(
+            Notification.user_id == user.id,
+            Notification.is_read == False,
+        )
     )
+    unread_count = result.scalar() or 0
 
-    ws_users = get_ws_by_user(user_id=session.user_id)
+    ws_users = get_ws_by_user(user_id=user.id)
     for ws_user in ws_users:
         try:
-            await ws_user.send('notification_read', {
-                "id": notification.id,
-                "unread_count": unread_count,
-            },)
+            await ws_user.send(
+                "notification_read",
+                {"id": notification.id, "unread_count": unread_count},
+            )
         except Exception as e:
             print(f"[WS] Lỗi gửi socket: {e}")
 
@@ -95,21 +94,23 @@ async def mark_notification_read(
         )
     )
 
+
 @router.post("/read/all")
 async def mark_all_notifications_read(
-    db: Session = Depends(get_db),
-    session: UserSession = Depends(require_session),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
 ):
-    db.query(Notification).filter(
-        Notification.user_id == session.user.id,
-        Notification.is_read == False
-    ).update({"is_read": True})
-    db.commit()
+    await db.execute(
+        update(Notification)
+        .where(Notification.user_id == user.id, Notification.is_read == False)
+        .values(is_read=True)
+    )
+    await db.commit()
 
-    ws_users = get_ws_by_user(user_id=session.user_id)
+    ws_users = get_ws_by_user(user_id=user.id)
     for ws_user in ws_users:
         try:
-            await ws_user.send('notification_read_all', {})
+            await ws_user.send("notification_read_all", {})
         except Exception as e:
             print(f"[WS] Lỗi gửi socket: {e}")
 
@@ -123,26 +124,22 @@ async def mark_all_notifications_read(
 
 
 @router.get("/unread-count")
-def get_unread_count(
-    db: Session = Depends(get_db),
-    session: UserSession = Depends(require_session),
+async def get_unread_count(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
 ):
-    count = (
-        db.query(func.count(Notification.id))
-        .filter(
-            Notification.user_id == session.user.id,
-            Notification.is_read == False
+    result = await db.execute(
+        select(func.count(Notification.id)).where(
+            Notification.user_id == user.id,
+            Notification.is_read == False,
         )
-        .scalar()
     )
+    count = result.scalar() or 0
 
     return build_response(
         detail=response_json(
             status=True,
             message="Lấy số lượng thông báo chưa đọc thành công!",
-            data={
-                "unread_count": count,
-                "has_unread": count > 0,
-            }
+            data={"unread_count": count, "has_unread": count > 0},
         )
     )

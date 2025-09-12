@@ -1,7 +1,8 @@
-from sqlalchemy.orm import Session
-from app.dependencies import get_db, require_session
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.dependencies import get_db, require_session, require_user
 from app.lib.ictu import Ictu
 from app.lib.tnue import Tnue
+from app.models.user import User
 from app.models.user_session import UserSession
 from app.utils import response_json, build_response
 from fastapi import APIRouter, HTTPException, Depends
@@ -10,14 +11,15 @@ PROVIDERS = {
     'DTC': Ictu,  # ICTU
     'DTS': Tnue,  # TNUE
 }
+
 router = APIRouter()
 
+
 @router.get("/")
-def get_current_user(
-    session: UserSession = Depends(require_session),
-    db: Session = Depends(get_db)
+async def get_current_user(
+    user: User = Depends(require_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = session.user
     return build_response(
         status_code=200,
         detail=response_json(
@@ -27,39 +29,40 @@ def get_current_user(
                 "id": user.id,
                 "username": user.username,
                 "full_name": user.full_name,
-                "email": user.email
-            }
-        )
+                "email": user.email,
+            },
+        ),
     )
+
+
 @router.get("/schedule")
-async def get_current_user(
-    session: UserSession = Depends(require_session),
-    db: Session = Depends(get_db)
+async def get_user_schedule(
+    user: User = Depends(require_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    provider_key = next((p for p in PROVIDERS if session.user.username.startswith(p)), None)
+    provider_key = next((p for p in PROVIDERS if user.username.startswith(p)), None)
 
     if provider_key:
-
         provider = PROVIDERS[provider_key]()
-        result = await provider.login(session.user.username, session.user.password)
+        result = await provider.login(user.username, user.password)
 
-        if result.get('error'):
+        if result.get("error"):
             raise HTTPException(
                 status_code=500,
-                detail=response_json(status=False, message=result.get('error')),
+                detail=response_json(status=False, message=result.get("error")),
             )
 
-        result = await provider.get_schedule()
+        schedule = await provider.get_schedule()
         return build_response(
             status_code=200,
             detail=response_json(
                 status=True,
-                message='Lấy dữ liệu lịch học thành công',
-                data=result
-            )
+                message="Lấy dữ liệu lịch học thành công",
+                data=schedule,
+            ),
         )
 
     raise HTTPException(
         status_code=404,
-        detail=response_json(status=False, message='Không có lịch')
+        detail=response_json(status=False, message="Không có lịch"),
     )

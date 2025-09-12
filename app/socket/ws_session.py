@@ -1,7 +1,6 @@
 import json
 from starlette.websockets import WebSocket
 
-from app.database import SessionLocal
 from app.socket.ws_controller import WebsocketController
 from app.socket.ws_store import remove_session
 
@@ -15,11 +14,9 @@ class WebSocketSession:
         self.session_id: int | None = None
         self.is_connected = False
         self.is_auth = False
-        self.db = SessionLocal()
 
         self.subscribed_order_pending = False
         self.last_location = None
-        self.is_shipper = False
 
     async def listen_message(self):
         self.is_connected = True
@@ -40,7 +37,6 @@ class WebSocketSession:
         except RuntimeError as e:
             print(f"[!] WebSocket already closed: {e}")
         await self.controller.cleanup()
-        self.db.close()
 
     async def send(self, cmd: str, payload: dict):
         try:

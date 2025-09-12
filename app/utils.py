@@ -9,6 +9,8 @@ import os
 import aiofiles
 from uuid import uuid4
 
+from starlette.concurrency import run_in_threadpool
+
 MD5_PATTERN = re.compile(r'^[a-fA-F0-9]{32}$')
 
 def is_md5(s: str) -> bool:
@@ -25,11 +27,15 @@ def md5_hash(text: str) -> str:
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def verify_password(raw_password: str, hashed_password: str) -> bool:
+
+async def verify_password(raw_password: str, hashed_password: str) -> bool:
     try:
-        return pwd_context.verify(raw_password, hashed_password)
+        return await run_in_threadpool(pwd_context.verify, raw_password, hashed_password)
     except UnknownHashError:
         return hashed_password == md5_hash(raw_password)
+
+async def hash_password(password: str) -> str:
+    return await run_in_threadpool(pwd_context.hash, password)
 
 def to_dict(model):
     result = {}

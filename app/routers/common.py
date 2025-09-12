@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from app.dependencies import get_db
 from app.models.banner import Banner
 from app.schemas.conversation import ChatRequest
@@ -9,8 +10,9 @@ from openai import AsyncOpenAI
 router = APIRouter()
 
 @router.get("/banners")
-def get_banners(db: Session = Depends(get_db)):
-    banners = db.query(Banner).order_by(Banner.created_at.desc()).all()
+async def get_banners(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Banner).order_by(Banner.created_at.desc()))
+    banners = result.scalars().all()
     return build_response(
         status_code=200,
         detail=response_json(status=True, message="Danh sách banner", data=banners)
@@ -38,7 +40,6 @@ async def chat_ai(payload: ChatRequest):
             input=[{"role": "user", "content": content}]
         )
 
-        # Thành công → message = output_text
         return build_response(
             status_code=200,
             detail=response_json(
@@ -49,7 +50,6 @@ async def chat_ai(payload: ChatRequest):
         )
 
     except Exception as e:
-        # Thất bại → message = lỗi
         return build_response(
             status_code=500,
             detail=response_json(
@@ -58,7 +58,7 @@ async def chat_ai(payload: ChatRequest):
                 data=None
             )
         )
-    
+
 @router.get("/f")
 async def list_files():
     client = AsyncOpenAI()
