@@ -95,8 +95,7 @@ class Tnus:
                 },
                 'hidden': {
                     'Giảng viên': teacher,
-                    'Mã lớp': class_code,
-                    'Số tín chỉ': credits
+                    'Số tín chỉ': int(credits)
                 },
             }
             items = duplicate_by_date(lichhoc, start_date, end_date, int(weekday))
