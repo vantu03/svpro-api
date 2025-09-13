@@ -3,11 +3,25 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from io import BytesIO
 
-from app.utils import extract_form_fields, convert_time_to_minutes, find_text_positions, get_study_time, \
+from app.utils import extract_form_fields, convert_time_to_minutes, find_text_positions, \
     clean_full_name, md5_hash_once, parse_period_range
 
 
 class Ictu:
+
+    @staticmethod
+    def get_study_time(tiet_start, tiet_end):
+        tiet_map = {
+            1: ("6:45", "7:35"), 2: ("7:40", "8:30"), 3: ("8:40", "9:30"),
+            4: ("9:40", "10:30"), 5: ("10:35", "11:25"), 6: ("13:00", "13:50"),
+            7: ("13:55", "14:45"), 8: ("14:55", "15:45"), 9: ("15:55", "16:45"),
+            10: ("16:50", "17:40"), 11: ("18:15", "19:05"), 12: ("19:10", "20:00"),
+            13: ("20:10", "21:00"), 14: ("21:10", "22:00"), 15: ("20:30", "21:30")
+        }
+        start = tiet_map.get(tiet_start, ("", ""))[0]
+        end = tiet_map.get(tiet_end, ("", ""))[1]
+        return f"{start} - {end}"
+
     def __init__(self):
         self.session = httpx.AsyncClient(
             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
@@ -99,7 +113,7 @@ class Ictu:
                     'dayOfWeek': weekday,
                     'className': cell,
                     'scheduleType': 'Lịch học',
-                    'timeRange': get_study_time(tiet_start, tiet_end),
+                    'timeRange': Ictu.get_study_time(tiet_start, tiet_end),
                     'detail': {
                         'Tiết': tiet_str,
                         'Địa điểm': str(df.iloc[i, col_room]).strip(),

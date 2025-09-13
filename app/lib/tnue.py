@@ -2,8 +2,7 @@ import base64, json
 import httpx, re
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from app.utils import duplicate_by_date, extract_form_fields, convert_time_to_minutes, \
-    get_study_time, clean_full_name, parse_period_range
+from app.utils import extract_form_fields, convert_time_to_minutes, clean_full_name
 
 
 class Tnue:

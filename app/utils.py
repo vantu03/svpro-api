@@ -100,18 +100,6 @@ def find_text_positions(df: pd.DataFrame, search_text: str, case_sensitive=False
                     matches.append({"row": row_idx, "col": col_idx, "value": cell})
     return matches
 
-def get_study_time(tiet_start, tiet_end):
-    tiet_map = {
-        1: ("6:45", "7:35"), 2: ("7:40", "8:30"), 3: ("8:40", "9:30"),
-        4: ("9:40", "10:30"), 5: ("10:35", "11:25"), 6: ("13:00", "13:50"),
-        7: ("13:55", "14:45"), 8: ("14:55", "15:45"), 9: ("15:55", "16:45"),
-        10: ("16:50", "17:40"), 11: ("18:15", "19:05"), 12: ("19:10", "20:00"),
-        13: ("20:10", "21:00"), 14: ("21:10", "22:00"), 15: ("20:30", "21:30")
-    }
-    start = tiet_map.get(tiet_start, ("", ""))[0]
-    end = tiet_map.get(tiet_end, ("", ""))[1]
-    return f"{start} - {end}"
-
 def convert_time_to_minutes(time_range):
     if not time_range or not isinstance(time_range, str): return -1
     match = re.match(r'(\d{2}):(\d{2})', time_range)

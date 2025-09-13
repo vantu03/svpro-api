@@ -2,10 +2,30 @@
 import httpx, re
 from bs4 import BeautifulSoup
 from datetime import datetime
-from app.utils import duplicate_by_date, extract_form_fields, convert_time_to_minutes, \
-    get_study_time, clean_full_name, parse_period_range
+from app.utils import duplicate_by_date, extract_form_fields, convert_time_to_minutes, clean_full_name, parse_period_range
 
 class Tnus:
+
+    @staticmethod
+    def get_study_time(tiet_start, tiet_end):
+        tiet_map = {
+            1: ("07:00", "07:50"),
+            2: ("07:55", "08:45"),
+            3: ("08:50", "09:40"),
+            4: ("09:50", "10:40"),
+            5: ("10:45", "11:35"),
+            6: ("11:40", "12:30"),
+            7: ("13:00", "13:50"),
+            8: ("13:55", "14:45"),
+            9: ("14:50", "15:40"),
+            10: ("15:50", "16:40"),
+            11: ("16:45", "17:35"),
+            12: ("17:40", "18:30"),
+        }
+        start = tiet_map.get(tiet_start, ("", ""))[0]
+        end = tiet_map.get(tiet_end, ("", ""))[1]
+        return f"{start} - {end}" if start and end else ""
+
     def __init__(self):
         self.session = httpx.AsyncClient(
             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
@@ -88,7 +108,7 @@ class Tnus:
                 'dayOfWeek': int(weekday) if weekday.isdigit() else None,
                 'className': class_name,
                 'scheduleType': 'Lịch học',
-                'timeRange': get_study_time(tiet_start, tiet_end),
+                'timeRange': Tnus.get_study_time(tiet_start, tiet_end),
                 'detail': {
                     'Tiết': tiet_str,
                     'Địa điểm': room,
