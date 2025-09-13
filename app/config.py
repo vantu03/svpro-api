@@ -4,6 +4,16 @@ from typing import ClassVar, Dict, Any
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
+from app.lib.ictu import Ictu
+from app.lib.tnue import Tnue
+from app.lib.tnus import Tnus
+
+SCHOOLS = {
+    'DTC': Ictu,
+    'DTS': Tnue,
+    'DTZ': Tnus,
+}
+
 class Settings(BaseSettings):
     APP_NAME: str = "VANTU"
     DEBUG: bool = False
@@ -36,3 +46,5 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings():
     return Settings()
+
+

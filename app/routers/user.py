@@ -1,16 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.dependencies import get_db, require_session, require_user
-from app.lib.ictu import Ictu
-from app.lib.tnue import Tnue
+from app.dependencies import get_db, require_user
+from app.config import SCHOOLS
 from app.models.user import User
-from app.models.user_session import UserSession
 from app.utils import response_json, build_response
 from fastapi import APIRouter, HTTPException, Depends
-
-PROVIDERS = {
-    'DTC': Ictu,  # ICTU
-    'DTS': Tnue,  # TNUE
-}
 
 router = APIRouter()
 
@@ -40,10 +33,10 @@ async def get_user_schedule(
     user: User = Depends(require_user),
     db: AsyncSession = Depends(get_db),
 ):
-    provider_key = next((p for p in PROVIDERS if user.username.startswith(p)), None)
+    provider_key = next((p for p in SCHOOLS if user.username.startswith(p)), None)
 
     if provider_key:
-        provider = PROVIDERS[provider_key]()
+        provider = SCHOOLS[provider_key]()
         result = await provider.login(user.username, user.password)
 
         if result.get("error"):

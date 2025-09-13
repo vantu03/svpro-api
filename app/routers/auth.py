@@ -14,13 +14,7 @@ from app.schemas.user import LoginRequest, RegisterRequest
 from app.services.notification_service import notify_user
 from app.utils import response_json, verify_password, build_response
 from app.config import get_settings
-from app.lib.ictu import Ictu
-from app.lib.tnue import Tnue
-
-PROVIDERS = {
-    'DTC': Ictu,
-    'DTS': Tnue,
-}
+from app.config import SCHOOLS
 
 router = APIRouter()
 settings = get_settings()
@@ -55,7 +49,7 @@ async def login(
     user = result.scalar_one_or_none()
 
     # xác định provider
-    provider_key = next((p for p in PROVIDERS if username.startswith(p)), None)
+    provider_key = next((p for p in SCHOOLS if username.startswith(p)), None)
 
     if data.school:
         async with httpx.AsyncClient() as client:
@@ -88,7 +82,7 @@ async def login(
             )
 
     elif provider_key and (not user or not await verify_password(data.password, user.password)):
-        provider = PROVIDERS[provider_key]()
+        provider = SCHOOLS[provider_key]()
         result = await provider.login(username, data.password)
 
         if result.get('error'):

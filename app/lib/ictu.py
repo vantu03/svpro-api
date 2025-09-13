@@ -16,14 +16,12 @@ class Ictu:
         )
         self.today = datetime.today()
         self.result = {
-            'startDate': self.today.strftime("%d/%m/%Y"),
-            'endDate': (self.today + timedelta(days=7)).strftime("%d/%m/%Y"),
             'schedule': []
         }
 
     async def login(self, tk, mk):
         try:
-            res = await self.session.get('http://dangkytinchi.ictu.edu.vn/kcntt/login.aspx')
+            res = await self.session.get('https://dangkytinchi.ictu.edu.vn/kcntt/login.aspx')
             soup = BeautifulSoup(res.text, 'html.parser')
             form_data = extract_form_fields(soup.find('form'))
 
@@ -32,9 +30,9 @@ class Ictu:
 
             res = await self.session.post(url=res.url, data=form_data)
             soup = BeautifulSoup(res.text, 'html.parser')
-            lbl_error = soup.find(id="lblErrorInfo")
-            if lbl_error and lbl_error.text.strip():
-                return {'error': lbl_error.text.strip()}
+
+            if "/login.aspx" in str(res.url):
+                return {"error": "Đăng nhập thất bại hãy kiểm tra lại tài khoản mật khẩu"}
 
             full_name_tag = soup.find(id="PageHeader1_lblUserFullName")
             return {
@@ -53,15 +51,10 @@ class Ictu:
             convert_time_to_minutes(x.get('timeRange', ''))
         ))
 
-        # Cập nhật startDate và endDate theo lịch thực tế
-        dates = [x['date'] for x in self.result['schedule'] if x.get('date')]
-        if dates:
-            self.result['startDate'] = dates[0]
-            self.result['endDate'] = dates[-1]
         return self.result
 
     async def get_lich_hoc(self):
-        res = await self.session.get('http://dangkytinchi.ictu.edu.vn/kcntt/Reports/Form/StudentTimeTable.aspx')
+        res = await self.session.get('https://dangkytinchi.ictu.edu.vn/kcntt/Reports/Form/StudentTimeTable.aspx')
         soup = BeautifulSoup(res.text, 'html.parser')
         form_data = extract_form_fields(soup.find('form'))
         # Lấy ngày hiện tại trừ đi 4 năm
