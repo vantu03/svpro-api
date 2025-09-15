@@ -195,10 +195,10 @@ def duplicate_by_date(item, start_date, end_date, weekday=None):
         current += timedelta(days=1)
     return result
 
-async def save_upload_file(file, upload_folder: str, max_size: int, allowed_exts: set, allowed_mimes: set):
+async def save_upload_file(file, upload_folder: str, max_size: int, allowed_exts: set):
     ext = os.path.splitext(file.filename)[-1].lower()
 
-    if ext not in allowed_exts or file.content_type not in allowed_mimes:
+    if ext not in allowed_exts:
         return None, "File type not allowed"
 
     content = await file.read()

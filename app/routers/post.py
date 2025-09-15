@@ -8,7 +8,7 @@ from app.models.user import User
 from app.schemas.comment import CommentCreate
 from app.schemas.post import PostCreate
 from app.utils import response_json, build_response, to_dict
-from sqlalchemy import select, func, case
+from sqlalchemy import select, func, case, distinct
 from app.models.post import Post
 from app.models.post_view import PostView
 
@@ -35,11 +35,13 @@ async def get_new_posts(
             Post.created_at,
             Post.updated_at,
             Post.is_deleted,
-            func.count(PostInteract.id).label("interact_count"),
+            func.count(distinct(PostInteract.id)).label("interact_count"),
+            func.count(distinct(PostComment.id)).label("comment_count"),
             (func.max(case((PostInteract.user_id == user.id, 1), else_=0)) > 0).label("is_interact")
         )
         .join(User, User.id == Post.user_id)
         .join(PostInteract, PostInteract.post_id == Post.id, isouter=True)
+        .join(PostComment, PostComment.post_id == Post.id, isouter=True)
         .where(Post.is_deleted.is_(False))
         .group_by(Post.id, Post.content, Post.user_id, User.full_name, Post.created_at, Post.updated_at)
         .order_by(Post.created_at.desc())
@@ -82,11 +84,13 @@ async def create_post(
             Post.created_at,
             Post.updated_at,
             Post.is_deleted,
-            func.count(PostInteract.id).label("interact_count"),
+            func.count(distinct(PostInteract.id)).label("interact_count"),
+            func.count(distinct(PostComment.id)).label("comment_count"),
             (func.max(case((PostInteract.user_id == user.id, 1), else_=0)) > 0).label("is_interact")
         )
         .join(User, User.id == Post.user_id)
         .join(PostInteract, PostInteract.post_id == Post.id, isouter=True)
+        .join(PostComment, PostComment.post_id == Post.id, isouter=True)
         .where(Post.id == new_post.id)
         .group_by(Post.id, Post.content, Post.user_id, User.full_name, Post.created_at, Post.updated_at, Post.is_deleted)
     )

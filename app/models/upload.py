@@ -19,7 +19,6 @@ class Upload(Base):
     file_path = Column(String(1000), nullable=False)
     file_name = Column(String(255), nullable=False)
     file_type = Column(Enum(FileType), default=FileType.other)
-    mime_type = Column(String(50), nullable=True)
     size = Column(Integer, nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now())
