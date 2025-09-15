@@ -24,7 +24,6 @@ class Settings(BaseSettings):
     FIREBASE_CREDENTIALS: str
     BASE_URL: str = "http://localhost:8000"
     OPENAI_API_KEY: str
-    FIREBASE_STORAGE_BUCKET: str
 
     PRICING: ClassVar[Dict[str, Dict[str, Any]]] = {
         "gpt-5-nano": {"input": 0.05, "output": 0.40, "unit_token": 1_000_000},
