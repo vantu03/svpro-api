@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import urljoin
@@ -5,7 +7,7 @@ from urllib.parse import urljoin
 from app.dependencies import get_db, require_user
 from app.models.upload import Upload, FileType
 from app.models.user import User
-from app.utils import response_json, build_response, save_upload_file
+from app.utils import response_json, build_response, save_upload_file, compress_image
 
 router = APIRouter()
 
@@ -40,6 +42,11 @@ async def upload_file(
     # check hợp lệ enum
     if file_type not in FileType:
         raise HTTPException(status_code=400, detail=response_json(status=False, message="Không chấp nhận"))
+
+    ext = os.path.splitext(result["filename"])[1].lower()
+    if ext in [".jpg", ".jpeg", ".png", ".webp"]:
+        new_size = compress_image(result["saved_path"])
+        result["size"] = new_size
 
     file_url = urljoin(str(request.base_url), f"static/uploads/{result['filename']}")
 

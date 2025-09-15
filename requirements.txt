@@ -88,3 +88,4 @@ watchfiles
 websockets
 WTForms
 xlrd
+pillow
