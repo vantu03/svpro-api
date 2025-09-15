@@ -4,21 +4,21 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from app.admin import setup_admin
-from app.database import Base, engine
 from app.services.firebase_service import initialize_firebase
 from app.routers import (
     auth, user, common, shipper, upload,
-    notification, websocket, sender, conversations, application
+    notification, websocket, sender, conversations, application, post
 )
-
+from app.database import Base, engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Init Firebase
     initialize_firebase()
 
-    # Init database (tạo bảng nếu chưa có)
+    # Init database
     async with engine.begin() as conn:
+        print("Loaded tables:", Base.metadata.tables.keys())
         await conn.run_sync(Base.metadata.create_all)
 
     yield
@@ -47,6 +47,7 @@ app.include_router(application.router, prefix="/application", tags=["application
 app.include_router(conversations.router, prefix="/conversations", tags=["conversations"])
 app.include_router(upload.router, prefix="/upload", tags=["upload"])
 app.include_router(notification.router, prefix="/notification", tags=["notification"])
+app.include_router(post.router, prefix="/post", tags=["post"])
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 
 # Admin setup

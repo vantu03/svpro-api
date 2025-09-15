@@ -150,7 +150,7 @@ async def login(
 
     return build_response(
         status_code=200,
-        detail=response_json(status=True, message='Đăng nhập thành công', data={"token": token})
+        detail=response_json(status=True, message='Đăng nhập thành công', data={"token": token, "user_id": user.id})
     )
 
 

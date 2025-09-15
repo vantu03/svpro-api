@@ -7,11 +7,13 @@ from functools import lru_cache
 from app.lib.ictu import Ictu
 from app.lib.tnue import Tnue
 from app.lib.tnus import Tnus
+from app.lib.tnut import Tnut
 
 SCHOOLS = {
     'DTC': Ictu,
     'DTS': Tnue,
     'DTZ': Tnus,
+    'DTZ': Tnut,
 }
 
 class Settings(BaseSettings):

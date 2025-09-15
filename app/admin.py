@@ -11,6 +11,11 @@ from app.config import get_settings
 from app.database import async_session
 from app.dependencies import verify_token
 from app.models.order import Order
+from app.models.post import Post
+from app.models.post_attachment import PostAttachment
+from app.models.post_comment import PostComment
+from app.models.post_interacts import PostInteract
+from app.models.post_view import PostView
 from app.models.sender import Sender
 from app.models.user import User
 from app.models.user_session import UserSession
@@ -261,6 +266,67 @@ class AppVersionAdmin(ModelView, model=AppVersion):
     ]
     form_excluded_columns = ["created_at", "updated_at"]
 
+class PostAdmin(ModelView, model=Post):
+    column_list = [
+        Post.id,
+        Post.user_id,
+        Post.content,
+        Post.is_deleted,
+        Post.created_at,
+        Post.updated_at,
+    ]
+    form_excluded_columns = ["created_at", "updated_at"]
+
+class PostCommentAdmin(ModelView, model=PostComment):
+    column_list = [
+        PostComment.id,
+        PostComment.post_id,
+        PostComment.user_id,
+        PostComment.content,
+        PostComment.is_deleted,
+        PostComment.created_at,
+        PostComment.updated_at,
+    ]
+    form_excluded_columns = ["created_at", "updated_at"]
+
+class PostAttachmentAdmin(ModelView, model=PostAttachment):
+    column_list = [
+        PostAttachment.id,
+        PostAttachment.post_id,
+        PostAttachment.type,
+        PostAttachment.url,
+        PostAttachment.created_at,
+        PostAttachment.updated_at,
+    ]
+    form_excluded_columns = ["created_at", "updated_at"]
+
+    # Hiển thị preview nếu url là ảnh
+    column_formatters = {
+        "url": lambda m, a: Markup(f'<img src="{m.url}" style="max-width:200px;">') if m.url else ""
+    }
+    column_formatters_detail = {
+        "url": lambda m, a: Markup(f'<a href="{m.url}" target="_blank"><img src="{m.url}" style="max-width:400px;"></a>') if m.url else ""
+    }
+
+class PostInteractAdmin(ModelView, model=PostInteract):
+    column_list = [
+        PostInteract.id,
+        PostInteract.post_id,
+        PostInteract.user_id,
+        PostInteract.created_at,
+        PostInteract.updated_at,
+    ]
+    form_excluded_columns = ["created_at", "updated_at"]
+
+class PostViewAdmin(ModelView, model=PostView):
+    column_list = [
+        PostView.id,
+        PostView.post_id,
+        PostView.user_id,
+        PostView.created_at,
+        PostView.updated_at,
+    ]
+    form_excluded_columns = ["created_at", "updated_at"]
 
 def setup_admin(app, engine):
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
@@ -281,3 +347,9 @@ def setup_admin(app, engine):
     admin.add_view(UploadAdmin)
     admin.add_view(FCMTokenAdmin)
     admin.add_view(AppVersionAdmin)
+    admin.add_view(PostAdmin)
+    admin.add_view(PostCommentAdmin)
+    admin.add_view(PostAttachmentAdmin)
+    admin.add_view(PostInteractAdmin)
+    admin.add_view(PostViewAdmin)
+

@@ -9,6 +9,7 @@ import os
 import aiofiles
 from uuid import uuid4
 
+from sqlalchemy import RowMapping
 from starlette.concurrency import run_in_threadpool
 
 MD5_PATTERN = re.compile(r'^[a-fA-F0-9]{32}$')
@@ -36,15 +37,24 @@ async def verify_password(raw_password: str, hashed_password: str) -> bool:
 
 async def hash_password(password: str) -> str:
     return await run_in_threadpool(pwd_context.hash, password)
+def to_dict(obj):
+    if isinstance(obj, RowMapping) or isinstance(obj, dict):
+        return {
+            k: (v.isoformat() if isinstance(v, datetime) else v)
+            for k, v in dict(obj).items()
+        }
 
-def to_dict(model):
-    result = {}
-    for c in model.__table__.columns:
-        value = getattr(model, c.name)
-        if hasattr(value, "isoformat"):
-            value = value.isoformat()
-        result[c.name] = value
-    return result
+    if hasattr(obj, "__table__"):
+        result = {}
+        for c in obj.__table__.columns:
+            v = getattr(obj, c.name)
+            if isinstance(v, datetime):
+                v = v.isoformat()
+            result[c.name] = v
+        return result
+
+    return dict(obj)
+
 
 def build_response(
     status_code = 200,

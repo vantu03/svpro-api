@@ -23,6 +23,7 @@ async def get_current_user(
                 "username": user.username,
                 "full_name": user.full_name,
                 "email": user.email,
+                "avatar_url": user.avatar_url,
             },
         ),
     )
