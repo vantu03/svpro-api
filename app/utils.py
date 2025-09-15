@@ -1,5 +1,5 @@
 import json
-from PIL import Image
+from PIL import Image, ImageOps
 import pandas as pd, re
 import hashlib
 from passlib.context import CryptContext
@@ -242,7 +242,8 @@ def is_outdated(current: str, latest: str) -> bool:
 def compress_image(path: str, max_dim: int = 2048, quality: int = 85) -> int:
     try:
         img = Image.open(path)
-        img_format = img.format  # JPEG, PNG, WEBP...
+        img = ImageOps.exif_transpose(img)
+        img_format = img.format
 
         # Resize nếu kích thước quá lớn
         w, h = img.size
@@ -256,7 +257,7 @@ def compress_image(path: str, max_dim: int = 2048, quality: int = 85) -> int:
             img = img.convert("RGB")
             new_path = os.path.splitext(path)[0] + ".jpg"
             img.save(new_path, "JPEG", quality=quality, optimize=True)
-            os.remove(path)  # xóa file gốc
+            os.remove(path)
             path = new_path
         else:
             img.save(path, img_format, quality=quality, optimize=True)
