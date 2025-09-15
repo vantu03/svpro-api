@@ -9,6 +9,7 @@ class FileType(str, enum.Enum):
     cmnd_back = "cmnd_back"
     license = "license"
     other = "other"
+    avatar = "avatar"
 
 class Upload(Base):
     __tablename__ = "uploads"

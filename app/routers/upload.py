@@ -1,5 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from urllib.parse import urljoin
+
 from app.dependencies import get_db, require_user
 from app.models.upload import Upload, FileType
 from app.models.user import User
@@ -15,6 +17,7 @@ ALLOWED_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".webp",
     ".pdf", ".doc", ".docx", ".txt", ".zip", ".rar"
 }
+
 
 @router.post("/")
 async def upload_file(
@@ -34,7 +37,11 @@ async def upload_file(
     if error:
         raise HTTPException(status_code=400, detail=response_json(status=False, message=error))
 
-    file_url = str(request.base_url) + f"static/uploads/{result['filename']}"
+    # check hợp lệ enum
+    if file_type not in FileType:
+        raise HTTPException(status_code=400, detail=response_json(status=False, message="Không chấp nhận"))
+
+    file_url = urljoin(str(request.base_url), f"static/uploads/{result['filename']}")
 
     upload = Upload(
         user_id=user.id,
@@ -46,6 +53,11 @@ async def upload_file(
     )
 
     db.add(upload)
+
+    # nếu là avatar thì update user.avatar_url
+    if file_type == FileType.avatar:
+        user.avatar_url = upload.url
+
     await db.commit()
     await db.refresh(upload)
 
