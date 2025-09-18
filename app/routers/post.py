@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_db, require_user
+from app.models.post_attachment import PostAttachment
 from app.models.post_comment import PostComment
 from app.models.post_interacts import PostInteract
 from app.models.user import User
@@ -54,9 +55,37 @@ async def get_new_posts(
     result = await db.execute(stmt)
     posts = result.mappings().all()
 
-    return build_response(
-        detail=response_json(True, data=[to_dict(row) for row in posts] if initial else [])
-    )
+    post_dicts = [dict(row) for row in posts]
+
+    if not post_dicts or not initial:
+        return build_response(detail=response_json(True, data=[]))
+
+    # Lấy list id
+    post_ids = [p["id"] for p in post_dicts]
+
+    # Query attachments cho các post_id
+    attach_stmt = select(
+        PostAttachment.id,
+        PostAttachment.post_id,
+        PostAttachment.type,
+        PostAttachment.url,
+        PostAttachment.created_at,
+        PostAttachment.updated_at,
+    ).where(PostAttachment.post_id.in_(post_ids))
+
+    attach_result = await db.execute(attach_stmt)
+    attachments = attach_result.mappings().all()
+
+    # Nhóm attachments theo post_id
+    attach_map = {}
+    for att in attachments:
+        attach_map.setdefault(att["post_id"], []).append(dict(att))
+
+    # Merge vào posts
+    for p in post_dicts:
+        p["attachments"] = attach_map.get(p["id"], [])
+
+    return build_response(detail=response_json(True, data=post_dicts))
 
 @router.post("/create")
 async def create_post(
