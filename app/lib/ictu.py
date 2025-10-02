@@ -35,7 +35,7 @@ class Ictu:
 
     async def login(self, tk, mk):
         try:
-            res = await self.session.get('https://dangkytinchi.ictu.edu.vn/kcntt/login.aspx')
+            res = await self.session.get('http://dangkytinchi.ictu.edu.vn/kcntt/login.aspx')
             soup = BeautifulSoup(res.text, 'html.parser')
             form_data = extract_form_fields(soup.find('form'))
 
@@ -68,7 +68,7 @@ class Ictu:
         return self.result
 
     async def get_lich_hoc(self):
-        res = await self.session.get('https://dangkytinchi.ictu.edu.vn/kcntt/Reports/Form/StudentTimeTable.aspx')
+        res = await self.session.get('http://dangkytinchi.ictu.edu.vn/kcntt/Reports/Form/StudentTimeTable.aspx')
         soup = BeautifulSoup(res.text, 'html.parser')
         form_data = extract_form_fields(soup.find('form'))
         # Lấy ngày hiện tại trừ đi 4 năm
