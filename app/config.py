@@ -13,6 +13,7 @@ SCHOOLS = {
     'DTC': Ictu,
     'DTS': Tnue,
     'DTZ': Tnus,
+    'K': Tnut,
 }
 
 class Settings(BaseSettings):
