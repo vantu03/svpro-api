@@ -135,18 +135,6 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
         "phone_number": {"readonly": True},
     }
 
-    column_formatters_detail = {
-        "portrait_image": lambda m, a: Markup(
-            f'<a href="{m.portrait_image}" target="_blank"><img src="{m.portrait_image}" style="width: 200px;">'
-        ),
-        "identity_image_front": lambda m, a: Markup(
-            f'<a href="{m.identity_image_front}" target="_blank"><img src="{m.identity_image_front}" style="width: 200px;">'
-        ),
-        "identity_image_back": lambda m, a: Markup(
-            f'<a href="{m.identity_image_back}" target="_blank"><img src="{m.identity_image_back}" style="width: 200px;">'
-        ),
-    }
-
     async def after_model_change(
         self, data: dict, model: Any, is_created: bool, request: Request
     ) -> None:
@@ -162,7 +150,6 @@ class ShipperApplicationAdmin(ModelView, model=ShipperApplication):
                         application_id=model.id,
                         full_name=model.full_name,
                         phone_number=model.phone_number,
-                        avatar_url=model.portrait_image,
                         is_active=True,
                     )
                     db.add(new_shipper)

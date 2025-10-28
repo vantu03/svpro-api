@@ -3,7 +3,8 @@ from datetime import timedelta, datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from app.dependencies import get_db, require_session, require_shipper
+from app.dependencies import get_db, require_session, require_shipper, require_user
+from app.models.user import User
 from app.models.order import Order, OrderStatus
 from app.models.shipper_application import ShipperApplication, ApplicationStatus
 from app.models.shipper import Shipper
@@ -59,21 +60,29 @@ async def get_shipper_info(
         )
     )
 
-
 @router.post("/register")
 async def register_shipper(
     payload: ShipperRegisterRequest,
     db: AsyncSession = Depends(get_db),
-    session=Depends(require_session),
+    user: User = Depends(require_user),
 ):
-    if session.user.shipper and session.user.shipper.is_active:
+    # Tự kiểm tra xem user đã có shipper chưa
+    result = await db.execute(
+        select(Shipper)
+        .where(Shipper.user_id == user.id, Shipper.is_active == True)
+        .order_by(Shipper.created_at.desc())
+    )
+    shipper = result.scalar_one_or_none()
+
+    if shipper and shipper.is_active:
         raise HTTPException(
             status_code=400, detail=response_json(False, "Bạn đã là Shipper.")
         )
 
+    # Kiểm tra đơn ứng tuyển đang chờ
     result = await db.execute(
         select(ShipperApplication).where(
-            ShipperApplication.user_id == session.user.id,
+            ShipperApplication.user_id == user.id,
             ShipperApplication.status == ApplicationStatus.pending,
         )
     )
@@ -85,20 +94,12 @@ async def register_shipper(
             detail=response_json(False, "Bạn đã gửi đơn đăng ký và đang chờ duyệt"),
         )
 
+    # ✅ Tạo hồ sơ mới
     application = ShipperApplication(
-        user_id=session.user.id,
+        user_id=user.id,
         full_name=normalize_name(payload.full_name),
         phone_number=normalize_phone(payload.phone_number),
-        identity_number=payload.identity_number,
-        identity_image_front=payload.identity_image_front,
-        identity_image_back=payload.identity_image_back,
-        portrait_image=payload.portrait_image,
         address=payload.address,
-        date_of_birth=payload.date_of_birth,
-        gender=payload.gender,
-        vehicle_type=payload.vehicle_type,
-        license_plate=payload.license_plate,
-        note=payload.note,
         status=ApplicationStatus.pending,
     )
 
@@ -107,8 +108,7 @@ async def register_shipper(
     await db.refresh(application)
 
     await notify_user(
-        db,
-        session.user.id,
+        user.id,
         "Đã gửi hồ sơ Shipper",
         "Bạn đã gửi hồ sơ đăng ký làm Shipper, hãy chờ để chúng tôi xét duyệt.",
         "sound_warning.wav",

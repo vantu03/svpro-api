@@ -12,8 +12,6 @@ class Shipper(Base):
 
     full_name = Column(String(100), nullable=False)
     phone_number = Column(String(20), nullable=False)
-    avatar_url = Column(String(1000), nullable=True)
-
 
     created_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now(), onupdate=func.now())

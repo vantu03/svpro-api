@@ -1,30 +1,32 @@
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from contextlib import asynccontextmanager
-
 from app.admin import setup_admin
 from app.services.firebase_service import initialize_firebase
+from app.database import engine, Base
+
 from app.routers import (
-    auth, user, common, shipper, upload,
-    notification, websocket, sender, conversations, application, post
+    auth,
+    user,
+    common,
+    shipper,
+    upload,
+    notification,
+    websocket,
+    sender,
+    conversations,
+    application,
+    post,
+    feedback,
+    exercise,
 )
-from app.database import Base, engine
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Init Firebase
-    initialize_firebase()
-
-    # Init database
+app = FastAPI()
+# Khởi tạo database
+@app.on_event("startup")
+async def on_startup():
     async with engine.begin() as conn:
-        print("Loaded tables:", Base.metadata.tables.keys())
         await conn.run_sync(Base.metadata.create_all)
-
-    yield
-
-app = FastAPI(lifespan=lifespan)
-
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -44,14 +46,17 @@ app.include_router(shipper.router, prefix="/shipper", tags=["shipper"])
 app.include_router(sender.router, prefix="/sender", tags=["sender"])
 app.include_router(common.router, prefix="/common", tags=["common"])
 app.include_router(application.router, prefix="/application", tags=["application"])
+app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
+app.include_router(exercise.router, prefix="/exercise", tags=["exercise"])
 app.include_router(conversations.router, prefix="/conversations", tags=["conversations"])
 app.include_router(upload.router, prefix="/upload", tags=["upload"])
 app.include_router(notification.router, prefix="/notification", tags=["notification"])
 app.include_router(post.router, prefix="/post", tags=["post"])
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 
-# Admin setup
 setup_admin(app, engine)
+
+initialize_firebase()
 
 @app.get("/")
 def read_root():

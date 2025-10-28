@@ -8,9 +8,6 @@ class ApplicationStatus(str, enum.Enum):
     approved = "approved"
     rejected = "rejected"
 
-class VehicleType(str, enum.Enum):
-    motorbike = "motorbike"
-    car = "car"
 
 class ShipperApplication(Base):
     __tablename__ = "shipper_applications"
@@ -20,20 +17,8 @@ class ShipperApplication(Base):
 
     full_name = Column(String(100), nullable=False)
     phone_number = Column(String(20), nullable=False)
-    identity_number = Column(String(20), nullable=False)
-
-    identity_image_front = Column(String(1000), nullable=True)
-    identity_image_back = Column(String(1000), nullable=True)
-    portrait_image = Column(String(1000) ,nullable=True)
-
     address = Column(String(255), nullable=False)
-    date_of_birth = Column(Date, nullable=True)
-    gender = Column(String(10), nullable=True)
 
-    vehicle_type = Column(Enum(VehicleType), nullable=False)
-    license_plate = Column(String(20), nullable=False)
-
-    note = Column(Text, nullable=True)
     status = Column(Enum(ApplicationStatus), default=ApplicationStatus.pending)
     reject_reason = Column(Text, nullable=True)
 

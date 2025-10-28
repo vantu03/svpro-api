@@ -26,6 +26,8 @@ class User(Base):
     sender = relationship("Sender", back_populates="user", uselist=False, cascade="all, delete-orphan")
     posts = relationship("Post", back_populates="user", cascade="all, delete-orphan")
     post_comments = relationship("PostComment", back_populates="user", cascade="all, delete-orphan")
+    feedbacks = relationship("Feedback", back_populates="user", cascade="all, delete-orphan")
+
 
     def __repr__(self):
         return f"<User {self.id} {self.username}>"

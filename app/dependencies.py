@@ -65,21 +65,40 @@ async def require_user(session: UserSession = Depends(require_session), db: Asyn
     return user
 
 
-async def require_sender(user: User = Depends(require_user)) -> Sender:
-    sender = user.sender
-    if not sender or sender.status != SenderStatus.active:
-        raise HTTPException(
-            status_code=400,
-            detail=response_json(False, "Bạn chưa có hồ sơ người gửi. Vui lòng đăng ký trước.")
-        )
-    return sender
+async def require_shipper(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
+) -> Shipper:
+    result = await db.execute(
+        select(Shipper)
+        .where(Shipper.user_id == user.id, Shipper.is_active == True)
+        .order_by(Shipper.created_at.desc())
+    )
+    shipper = result.scalar_one_or_none()
 
-
-async def require_shipper(user: User = Depends(require_user)) -> Shipper:
-    shipper = user.shipper
-    if not shipper or not shipper.is_active:
+    if not shipper:
         raise HTTPException(
             status_code=403,
-            detail=response_json(False, "Bạn chưa phải là shipper hoặc chưa được duyệt.")
+            detail=response_json(False, "Bạn chưa phải là shipper hoặc tài khoản chưa được duyệt."),
         )
+
     return shipper
+
+async def require_sender(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
+) -> Sender:
+    result = await db.execute(
+        select(Sender)
+        .where(Sender.user_id == user.id, Sender.status == SenderStatus.active)
+        .order_by(Sender.created_at.desc())
+    )
+    sender = result.scalar_one_or_none()
+
+    if not sender:
+        raise HTTPException(
+            status_code=400,
+            detail=response_json(False, "Bạn chưa có hồ sơ người gửi. Vui lòng đăng ký trước."),
+        )
+
+    return sender
