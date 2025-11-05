@@ -14,9 +14,11 @@ from app.models.post import Post
 from app.models.post_view import PostView
 
 router = APIRouter()
+
+
 @router.get("/news")
 async def get_new_posts(
-    initial :bool = True,
+    initial: bool = True,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_user),
 ):
@@ -46,11 +48,14 @@ async def get_new_posts(
         .where(Post.is_deleted.is_(False))
         .group_by(Post.id, Post.content, Post.user_id, User.full_name, Post.created_at, Post.updated_at)
         .order_by(Post.created_at.desc())
-        #.limit(10)
+        .limit(10)
     )
 
-    #if viewed_post_ids:
-        #stmt = stmt.where(~Post.id.in_(viewed_post_ids))
+    # Giữ lại bài của chính người dùng, bỏ bài đã xem của người khác
+    if viewed_post_ids:
+        stmt = stmt.where(
+            (~Post.id.in_(viewed_post_ids)) | (Post.user_id == user.id)
+        )
 
     result = await db.execute(stmt)
     posts = result.mappings().all()
@@ -60,10 +65,8 @@ async def get_new_posts(
     if not post_dicts or not initial:
         return build_response(detail=response_json(True, data=[]))
 
-    # Lấy list id
     post_ids = [p["id"] for p in post_dicts]
 
-    # Query attachments cho các post_id
     attach_stmt = select(
         PostAttachment.id,
         PostAttachment.post_id,
@@ -76,16 +79,15 @@ async def get_new_posts(
     attach_result = await db.execute(attach_stmt)
     attachments = attach_result.mappings().all()
 
-    # Nhóm attachments theo post_id
     attach_map = {}
     for att in attachments:
         attach_map.setdefault(att["post_id"], []).append(dict(att))
 
-    # Merge vào posts
     for p in post_dicts:
         p["attachments"] = attach_map.get(p["id"], [])
 
     return build_response(detail=response_json(True, data=post_dicts))
+
 
 @router.post("/create")
 async def create_post(

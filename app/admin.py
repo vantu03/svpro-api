@@ -10,6 +10,7 @@ from sqlalchemy import select
 from app.config import get_settings
 from app.database import async_session
 from app.dependencies import verify_token
+from app.models.feedback import Feedback
 from app.models.order import Order
 from app.models.post import Post
 from app.models.post_attachment import PostAttachment
@@ -315,6 +316,16 @@ class PostViewAdmin(ModelView, model=PostView):
     ]
     form_excluded_columns = ["created_at", "updated_at"]
 
+class FeedbackAdmin(ModelView, model=Feedback):
+    column_list = [
+        Feedback.id,
+        Feedback.title,
+        Feedback.content,
+        Feedback.created_at,
+        Feedback.updated_at,
+    ]
+    form_excluded_columns = ["created_at", "updated_at"]
+
 def setup_admin(app, engine):
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
     admin = Admin(
@@ -339,4 +350,5 @@ def setup_admin(app, engine):
     admin.add_view(PostAttachmentAdmin)
     admin.add_view(PostInteractAdmin)
     admin.add_view(PostViewAdmin)
+    admin.add_view(FeedbackAdmin)
 

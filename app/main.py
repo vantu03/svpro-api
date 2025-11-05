@@ -15,11 +15,9 @@ from app.routers import (
     notification,
     websocket,
     sender,
-    conversations,
     application,
     post,
     feedback,
-    exercise,
 )
 app = FastAPI()
 # Khởi tạo database
@@ -47,8 +45,6 @@ app.include_router(sender.router, prefix="/sender", tags=["sender"])
 app.include_router(common.router, prefix="/common", tags=["common"])
 app.include_router(application.router, prefix="/application", tags=["application"])
 app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
-app.include_router(exercise.router, prefix="/exercise", tags=["exercise"])
-app.include_router(conversations.router, prefix="/conversations", tags=["conversations"])
 app.include_router(upload.router, prefix="/upload", tags=["upload"])
 app.include_router(notification.router, prefix="/notification", tags=["notification"])
 app.include_router(post.router, prefix="/post", tags=["post"])
