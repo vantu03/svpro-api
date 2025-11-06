@@ -39,10 +39,6 @@ coverage.xml
 *.py,cover
 .hypothesis/
 
-# Firebase private key (nếu dùng)
-*.json
-!firebase_config_example.json
-
 # Static uploads / user content
 static/uploads/
 media/
