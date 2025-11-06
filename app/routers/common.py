@@ -1,7 +1,9 @@
+import numpy as np
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.dependencies import get_db
+from app.main import searcher
 from app.models.banner import Banner
 from app.schemas.conversation import ChatRequest
 from app.utils import response_json, build_response
@@ -30,9 +32,21 @@ async def get_utilities(db: AsyncSession = Depends(get_db)):
 async def chat_ai(payload: ChatRequest):
     client = AsyncOpenAI()
 
+    resp = await client.embeddings.create(
+        model="text-embedding-3-small",
+        input=payload.prompt
+    )
+    query_vec = np.array(resp.data[0].embedding, dtype=np.float32)
+    query_vec /= np.linalg.norm(query_vec)
+
+    results = await searcher.search(query_vec, 3)
+
+    context = "\n\n".join([r["text"] for r in results])
+    prompt_text = f"{context}\n\nUser: {payload.prompt}"
+
     try:
         # Chuẩn bị nội dung input
-        content = [{"type": "input_text", "text": payload.prompt}]
+        content = [{"type": "input_text", "text": prompt_text}]
 
         # Thêm ảnh
         for img in payload.images:

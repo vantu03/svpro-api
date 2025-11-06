@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.admin import setup_admin
+from app.services.embedding_search_service import EmbeddingSearch
 from app.services.firebase_service import initialize_firebase
 from app.database import engine, Base
 
@@ -20,11 +21,20 @@ from app.routers import (
     feedback,
 )
 app = FastAPI()
+
+searcher: EmbeddingSearch
+
 # Khởi tạo database
 @app.on_event("startup")
 async def on_startup():
+
+    global searcher
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    searcher = EmbeddingSearch()
+
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
