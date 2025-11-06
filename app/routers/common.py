@@ -39,7 +39,7 @@ async def chat_ai(payload: ChatRequest):
     query_vec = np.array(resp.data[0].embedding, dtype=np.float32)
     query_vec /= np.linalg.norm(query_vec)
 
-    results = await embedding_search.search(query_vec, 3)
+    results = embedding_search.search(query_vec, 3)
 
     context = "\n\n".join([r["text"] for r in results])
     prompt_text = f"{context}\n\nUser: {payload.prompt}"

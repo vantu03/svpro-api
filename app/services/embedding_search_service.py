@@ -1,11 +1,6 @@
 import json
 import numpy as np
 
-embedding_search = None
-def initialize_search():
-    global embedding_search
-    embedding_search =  EmbeddingSearch()
-    print("✅ EmbeddingSearch initialized!")
 
 class EmbeddingSearch:
     def __init__(self):
@@ -38,3 +33,5 @@ class EmbeddingSearch:
             })
         return results
 
+
+embedding_search =  EmbeddingSearch()

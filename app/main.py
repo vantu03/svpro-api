@@ -3,9 +3,10 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.admin import setup_admin
-from app.services.embedding_search_service import initialize_search
 from app.services.firebase_service import initialize_firebase
 from app.database import engine, Base
+
+from dotenv import load_dotenv
 
 from app.routers import (
     auth,
@@ -20,6 +21,7 @@ from app.routers import (
     post,
     feedback,
 )
+load_dotenv()
 app = FastAPI()
 
 # Khởi tạo database
@@ -56,7 +58,6 @@ app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 setup_admin(app, engine)
 
 initialize_firebase()
-initialize_search()
 
 @app.get("/")
 def read_root():
