@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.dependencies import get_db
-from app.main import searcher
 from app.models.banner import Banner
 from app.schemas.conversation import ChatRequest
+from app.services.embedding_search_service import embedding_search
 from app.utils import response_json, build_response
 from openai import AsyncOpenAI
 
@@ -39,7 +39,7 @@ async def chat_ai(payload: ChatRequest):
     query_vec = np.array(resp.data[0].embedding, dtype=np.float32)
     query_vec /= np.linalg.norm(query_vec)
 
-    results = await searcher.search(query_vec, 3)
+    results = await embedding_search.search(query_vec, 3)
 
     context = "\n\n".join([r["text"] for r in results])
     prompt_text = f"{context}\n\nUser: {payload.prompt}"
