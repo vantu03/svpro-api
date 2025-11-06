@@ -34,4 +34,4 @@ class EmbeddingSearch:
         return results
 
 
-embedding_search =  EmbeddingSearch()
+embedding_search =  None#EmbeddingSearch()

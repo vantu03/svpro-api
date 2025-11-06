@@ -32,16 +32,19 @@ async def get_utilities(db: AsyncSession = Depends(get_db)):
 async def chat_ai(payload: ChatRequest):
     client = AsyncOpenAI()
 
-    resp = await client.embeddings.create(
-        model="text-embedding-3-small",
-        input=payload.prompt
-    )
-    query_vec = np.array(resp.data[0].embedding, dtype=np.float32)
-    query_vec /= np.linalg.norm(query_vec)
+    if embedding_search:
+        resp = await client.embeddings.create(
+            model="text-embedding-3-small",
+            input=payload.prompt
+        )
+        query_vec = np.array(resp.data[0].embedding, dtype=np.float32)
+        query_vec /= np.linalg.norm(query_vec)
 
-    results = embedding_search.search(query_vec, 3)
+        results = embedding_search.search(query_vec, 3)
 
-    context = "\n\n".join([r["text"] for r in results])
+        context = "\n\n".join([r["text"] for r in results])
+    else:
+        context = ''
     prompt_text = f"{context}\n\nUser: {payload.prompt}"
 
     try:
