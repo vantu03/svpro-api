@@ -24,7 +24,7 @@ async def get_utilities(db: AsyncSession = Depends(get_db)):
     return build_response(
         status_code=200,
         detail=response_json(status=True, message="URL tiện ích", data={
-            "url": "https://react-simple-quiz-delta.vercel.app/"
+            "url": "https://dlhub.vn/"
         })
     )
 
